@@ -155,6 +155,17 @@ load_configuration() {
     EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS="${STANDARDS_AS_CLAUDE_CODE_SKILLS:-$BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS}"
     EFFECTIVE_VERSION="$BASE_VERSION"
 
+    # Validate profile directory exists (inheritance chain validation)
+    local profile_dir="$BASE_DIR/profiles/$EFFECTIVE_PROFILE"
+    if [[ ! -d "$profile_dir" ]]; then
+        print_error "Profile directory not found: $profile_dir"
+        print_error "Available profiles:"
+        for p in "$BASE_DIR/profiles"/*/; do
+            [[ -d "$p" ]] && echo "  - $(basename "$p")"
+        done
+        exit 1
+    fi
+
     # Validate configuration using common function (may override EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS if dependency not met)
     validate_config "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$EFFECTIVE_PROFILE"
 

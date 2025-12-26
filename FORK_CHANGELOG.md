@@ -4,6 +4,137 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-26 23:45] MEDIUM Severity Fixes - Script Robustness & Standards Expansion
+
+### Description
+
+Implemented fixes for MEDIUM severity issues identified in the comprehensive analysis plan. These fixes improve script robustness with better validation, path security, and expand the default profile with missing frontend standards and documentation.
+
+### Issues Fixed
+
+#### M1: YAML Array Parsing with Unusual Formatting (MEDIUM severity)
+
+**Location:** `scripts/common-functions.sh:140-229` (`get_yaml_array()` function)
+
+**Problem:** YAML array parsing failed with inline array format `key: [item1, item2]` and arrays without space after dash `-item`.
+
+**Fix:** Enhanced `get_yaml_array()` to handle:
+- Inline array format: `key: [item1, item2, item3]`
+- Array items without space: `-item` in addition to `- item`
+- Empty items filtering
+
+#### M2: Missing Source File Validation in Copy Operations (MEDIUM severity)
+
+**Location:** `scripts/common-functions.sh:273-301` (`copy_file()` function)
+
+**Problem:** The `copy_file()` function didn't validate that source files exist before attempting to copy.
+
+**Fix:** Added source file existence check with warning message:
+- `print_warning "Source file not found: $source"` before copy operations
+- Function returns 1 on validation failure
+
+#### M3: Path Traversal Validation (MEDIUM severity)
+
+**Location:** `scripts/common-functions.sh:235-250` (`validate_path_safe()` function - new)
+
+**Problem:** No validation for path traversal attempts (`..`) in file operations.
+
+**Fix:** Added new `validate_path_safe()` function and integrated into:
+- `ensure_dir()` - validates directory paths
+- `copy_file()` - validates both source and destination paths
+- `write_file()` - validates destination paths
+
+#### M4: Array Bounds Checking in create-profile.sh (MEDIUM severity)
+
+**Location:** `scripts/create-profile.sh:207-215`
+
+**Problem:** Profile selection accessed array without bounds checking.
+
+**Fix:** Added explicit bounds check before array access:
+```bash
+local profile_index=$((selection-2))
+if [[ $profile_index -ge 0 ]] && [[ $profile_index -lt ${#profiles[@]} ]]; then
+```
+
+#### M5: Path Traversal Validation in Profile Name (MEDIUM severity)
+
+**Location:** `scripts/create-profile.sh:82-86`
+
+**Problem:** Profile name input wasn't validated for path traversal attempts.
+
+**Fix:** Added security check for `..` and `/` characters in profile names.
+
+#### M6: Inheritance Chain Validation (MEDIUM severity)
+
+**Location:** `scripts/project-install.sh:158-167`
+
+**Problem:** No validation that profile directory exists after setting EFFECTIVE_PROFILE.
+
+**Fix:** Added profile directory existence check with helpful error message listing available profiles.
+
+#### M7-M10: Standards Profile Expansion (MEDIUM severity)
+
+**Problem:** Default profile frontend standards were minimal (no state management, routing patterns).
+
+**Fix:** Created new standards files:
+- `profiles/default/standards/frontend/state-management.md` - State management best practices
+- `profiles/default/standards/frontend/routing.md` - Client-side routing patterns
+- `profiles/default/standards/global/deprecation.md` - Standard deprecation process
+- `profiles/default/standards/_toc.md` - Standards table of contents
+
+#### M11: Tech Stack Template Expansion (MEDIUM severity)
+
+**Location:** `profiles/default/standards/global/tech-stack.md`
+
+**Problem:** Tech stack template was minimal with no guidance.
+
+**Fix:** Expanded template with:
+- Additional technology categories (Build Tool, TypeScript, File Storage, E2E Testing, Container/Orchestration)
+- "How to Use This Document" section
+- Example notes section for documenting decisions
+- Versioning guidance section
+
+### Modified Files
+
+| File | Modification |
+|------|--------------|
+| `scripts/common-functions.sh` | Enhanced YAML parsing, added path validation, source file validation |
+| `scripts/create-profile.sh` | Added array bounds checking, path traversal validation |
+| `scripts/project-install.sh` | Added inheritance chain validation |
+| `profiles/default/standards/global/tech-stack.md` | Expanded template with guidance |
+| `profiles/default/standards/frontend/state-management.md` | New file - state management patterns |
+| `profiles/default/standards/frontend/routing.md` | New file - routing best practices |
+| `profiles/default/standards/global/deprecation.md` | New file - deprecation process |
+| `profiles/default/standards/_toc.md` | New file - standards table of contents |
+
+### Verification Results
+
+- All scripts pass bash syntax check (`bash -n`)
+- Path traversal attempts now detected and blocked
+- Profile selection is bounds-checked
+- Default profile has comprehensive frontend standards
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| MEDIUM issues fixed | 11 (consolidated from 29 in plan, many not applicable) |
+| Files modified | 4 |
+| Files created | 4 |
+| Lines added | ~350 |
+
+### Notes
+
+The following MEDIUM issues from the original plan were NOT applicable or already handled:
+- Issues referencing profiles (woocommerce, seo-nextjs-drizzle, react, nextjs, wordpress) that no longer exist
+- Command counter initialization - already properly initialized
+- Mismatched template tag handling - already has warnings
+- PHASE tag parsing - already robust with `|| true` handling
+- Conditional flags documentation - already documented in config.yml
+- Standards reference inconsistencies - no `{{standards/` patterns found in commands
+
+---
+
 ## [2025-12-26 22:15] HIGH Severity Fixes - Profile Validation & Compile Error Handling
 
 ### Description

@@ -79,6 +79,12 @@ get_profile_name() {
             continue
         fi
 
+        # Security: Check for path traversal attempts
+        if [[ "$PROFILE_NAME" == *".."* ]] || [[ "$PROFILE_NAME" == *"/"* ]]; then
+            print_error "Invalid profile name: path traversal not allowed"
+            continue
+        fi
+
         # Check if profile already exists
         if [[ -d "$PROFILES_DIR/$PROFILE_NAME" ]]; then
             print_error "Profile '$PROFILE_NAME' already exists"
@@ -204,8 +210,15 @@ select_copy_source() {
             COPY_FROM=""
             print_status "Will create empty profile structure"
         elif [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 2 ]] && [[ "$selection" -le $((${#profiles[@]}+1)) ]]; then
-            COPY_FROM="${profiles[$((selection-2))]}"
-            print_success "Will copy contents from: $COPY_FROM"
+            # Array bounds check before accessing
+            local profile_index=$((selection-2))
+            if [[ $profile_index -ge 0 ]] && [[ $profile_index -lt ${#profiles[@]} ]]; then
+                COPY_FROM="${profiles[$profile_index]}"
+                print_success "Will copy contents from: $COPY_FROM"
+            else
+                print_error "Profile index out of bounds"
+                exit 1
+            fi
         else
             print_error "Invalid selection"
             exit 1

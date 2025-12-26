@@ -138,7 +138,7 @@ get_yaml_value() {
 }
 
 # Get array values from YAML (handles - item format under a key)
-# More robust: handles variable indentation
+# More robust: handles variable indentation, inline arrays [item1, item2], and unusual formatting
 get_yaml_array() {
     local file=$1
     local key=$2
@@ -172,6 +172,29 @@ get_yaml_array() {
         !found && $0 ~ "^" key "[[:space:]]*:" {
             found = 1
             key_indent = indent
+
+            # Check for inline array format: key: [item1, item2, item3]
+            if ($0 ~ /\[.*\]/) {
+                # Extract content between brackets
+                inline = $0
+                sub(/^[^[]*\[/, "", inline)
+                sub(/\].*$/, "", inline)
+                # Split by comma and print each item
+                n = split(inline, items, ",")
+                for (i = 1; i <= n; i++) {
+                    item = items[i]
+                    # Trim whitespace
+                    gsub(/^[[:space:]]+/, "", item)
+                    gsub(/[[:space:]]+$/, "", item)
+                    # Remove quotes
+                    gsub(/^["'\'']/, "", item)
+                    gsub(/["'\'']$/, "", item)
+                    if (length(item) > 0) {
+                        print item
+                    }
+                }
+                exit
+            }
             next
         }
 
@@ -182,8 +205,8 @@ get_yaml_array() {
                 exit
             }
 
-            # Look for array items (- item)
-            if ($0 ~ /^-[[:space:]]/) {
+            # Look for array items (- item) - handle both "- item" and "-item" (no space)
+            if ($0 ~ /^-/) {
                 # Set array indent from first item
                 if (array_indent == -1) {
                     array_indent = indent
@@ -195,7 +218,10 @@ get_yaml_array() {
                     # Remove quotes if present
                     gsub(/^["'\'']/, "")
                     gsub(/["'\'']$/, "")
-                    print
+                    # Skip empty items
+                    if (length($0) > 0) {
+                        print
+                    }
                 }
             }
         }
@@ -206,9 +232,31 @@ get_yaml_array() {
 # File Operations Functions
 # -----------------------------------------------------------------------------
 
+# Validate path doesn't contain path traversal attempts
+# Returns 0 if safe, 1 if path traversal detected
+validate_path_safe() {
+    local path=$1
+    local context=${2:-"path"}  # Optional context for error message
+
+    # Check for ".." in path (path traversal attempt)
+    if [[ "$path" == *".."* ]]; then
+        print_warning "Path traversal detected in $context: $path"
+        return 1
+    fi
+
+    # Check for absolute paths when relative expected (starts with /)
+    # This is informational - not always an error
+    return 0
+}
+
 # Create directory if it doesn't exist (unless in dry-run mode)
 ensure_dir() {
     local dir=$1
+
+    # Validate path doesn't contain traversal
+    if ! validate_path_safe "$dir" "directory"; then
+        return 1
+    fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
         if [[ ! -d "$dir" ]]; then
@@ -223,9 +271,24 @@ ensure_dir() {
 }
 
 # Copy file with dry-run support
+# Returns 1 if source file doesn't exist or path is invalid
 copy_file() {
     local source=$1
     local dest=$2
+
+    # Validate source file exists
+    if [[ ! -f "$source" ]]; then
+        print_warning "Source file not found: $source"
+        return 1
+    fi
+
+    # Validate paths don't contain traversal
+    if ! validate_path_safe "$source" "source file"; then
+        return 1
+    fi
+    if ! validate_path_safe "$dest" "destination"; then
+        return 1
+    fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "$dest"
@@ -241,6 +304,11 @@ copy_file() {
 write_file() {
     local content=$1
     local dest=$2
+
+    # Validate destination path
+    if ! validate_path_safe "$dest" "destination"; then
+        return 1
+    fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "$dest"
