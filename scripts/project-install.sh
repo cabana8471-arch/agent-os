@@ -222,7 +222,10 @@ install_claude_code_commands_with_delegation() {
                 local dest="$target_dir/${cmd_name}.md"
 
                 # Compile with workflow and standards injection (includes conditional compilation)
-                local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE")
+                if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE"; then
+                    print_error "Failed to compile command: $source"
+                    continue
+                fi
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
@@ -255,7 +258,10 @@ install_claude_code_commands_without_delegation() {
                 if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
                     local dest="$PROJECT_DIR/.claude/commands/agent-os/orchestrate-tasks.md"
                     # Compile without PHASE embedding for orchestrate-tasks
-                    local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
+                    if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" ""; then
+                        print_error "Failed to compile command: $source"
+                        continue
+                    fi
                     if [[ "$DRY_RUN" == "true" ]]; then
                         INSTALLED_FILES+=("$dest")
                     fi
@@ -269,7 +275,10 @@ install_claude_code_commands_without_delegation() {
                         local dest="$PROJECT_DIR/.claude/commands/agent-os/$cmd_name.md"
 
                         # Compile with PHASE embedding (mode="embed")
-                        local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed")
+                        if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed"; then
+                            print_error "Failed to compile command: $source"
+                            continue
+                        fi
                         if [[ "$DRY_RUN" == "true" ]]; then
                             INSTALLED_FILES+=("$dest")
                         fi
@@ -308,7 +317,10 @@ install_claude_code_agents() {
                 local dest="$target_dir/$filename"
                 
                 # Compile with workflow and standards injection
-                local compiled=$(compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
+                if ! compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" ""; then
+                    print_error "Failed to compile agent: $source"
+                    continue
+                fi
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
@@ -347,7 +359,10 @@ install_agent_os_commands() {
                 fi
 
                 # Compile with workflow and standards injection and PHASE embedding
-                local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed")
+                if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed"; then
+                    print_error "Failed to compile command: $source"
+                    continue
+                fi
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi

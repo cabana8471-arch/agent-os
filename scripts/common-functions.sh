@@ -333,7 +333,11 @@ get_profile_file() {
 
         # Check for inheritance
         if [[ ! -f "$profile_config" ]]; then
-            # No profile config means this is likely the default profile
+            # Check if this is a valid profile directory
+            if [[ ! -d "$profile_dir" ]]; then
+                print_warning "Profile directory not found: $profile_dir"
+            fi
+            # No profile config means this is the root of inheritance chain
             echo ""
             return
         fi
@@ -397,6 +401,10 @@ get_profile_files() {
             fi
             current_profile=$inherits_from
         else
+            # Check if this is a valid profile directory
+            if [[ ! -d "$profile_dir" ]]; then
+                print_warning "Profile directory not found in inheritance chain: $profile_dir"
+            fi
             break
         fi
     done
@@ -423,6 +431,10 @@ get_profile_files() {
             fi
             current_profile=$inherits_from
         else
+            # Check if this is a valid profile directory
+            if [[ ! -d "$profile_dir" ]]; then
+                print_warning "Profile directory not found in inheritance chain: $profile_dir"
+            fi
             break
         fi
     done
@@ -921,6 +933,12 @@ compile_agent() {
     local role_data=$5
     local phase_mode=${6:-""}  # Optional: "embed" to embed PHASE content, or empty for no processing
 
+    # Validate source file exists
+    if [[ ! -f "$source_file" ]]; then
+        print_error "Source file not found: $source_file"
+        return 1
+    fi
+
     local content=$(cat "$source_file")
 
     # Process role replacements if provided
@@ -1059,9 +1077,13 @@ compile_agent() {
         echo "$dest_file"
     else
         ensure_dir "$(dirname "$dest_file")"
-        echo "$content" > "$dest_file"
+        if ! echo "$content" > "$dest_file"; then
+            print_error "Failed to write compiled file: $dest_file"
+            return 1
+        fi
         print_verbose "Compiled agent: $dest_file"
     fi
+    return 0
 }
 
 # Compile command file with all replacements

@@ -1,0 +1,12 @@
+# Default Profile Configuration
+# This is the root profile of the inheritance chain.
+# All other profiles inherit from this one by default.
+
+# This profile does not inherit from any other profile
+inherits_from: false
+
+# No files are excluded from this profile
+# Child profiles can exclude files using:
+# exclude_inherited_files:
+#   - standards/backend/specific-file.md
+#   - standards/frontend/*
