@@ -8,6 +8,7 @@ Quick reference for available standards. Read specific files as needed.
 | `global/tech-stack.md` | Technology choices and framework preferences |
 | `global/coding-style.md` | Code formatting, naming conventions |
 | `global/conventions.md` | Project-wide coding conventions |
+| `global/deprecation.md` | Code deprecation guidelines and migration paths |
 | `global/validation.md` | Input validation patterns |
 | `global/error-handling.md` | Error handling strategies |
 | `global/logging.md` | Structured logging practices |
@@ -28,6 +29,8 @@ Quick reference for available standards. Read specific files as needed.
 |----------|-------------|
 | `frontend/components.md` | Component design, composition patterns |
 | `frontend/css.md` | CSS/styling conventions |
+| `frontend/routing.md` | Client-side routing patterns and navigation |
+| `frontend/state-management.md` | State management patterns and best practices |
 | `frontend/responsive.md` | Responsive design breakpoints |
 | `frontend/accessibility.md` | a11y requirements (WCAG compliance) |
 

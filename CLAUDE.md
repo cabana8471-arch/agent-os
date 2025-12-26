@@ -232,6 +232,7 @@ Agent templates use mustache-style syntax:
 - `{{standards/*}}` - Include all standards
 - `{{IF flag}}...{{ENDIF flag}}` - Include content when flag is true
 - `{{UNLESS flag}}...{{ENDUNLESS flag}}` - Include content when flag is false
+- `{{PHASE X: @agent-os/commands/path}}` - Multi-agent phase embedding (embeds compiled command file through full pipeline)
 
 ## Key Scripts
 

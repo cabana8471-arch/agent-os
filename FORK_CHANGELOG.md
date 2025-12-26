@@ -4,6 +4,81 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-26 23:40] Critical Issues Fix - Sparse Array & Duplicate Files
+
+### Description
+
+Fixed 3 active CRITICAL issues identified in the consolidated analysis report. One additional issue (C3) was verified as working correctly and only required documentation.
+
+### Issues Fixed
+
+#### 1. Duplicate Numbered File in implement-tasks (CRITICAL)
+
+**Location:** `profiles/default/commands/implement-tasks/single-agent/`
+
+**Problem:** Two files numbered "3" existed:
+- `3-code-review.md` (correct)
+- `3-verify-implementation.md` (DUPLICATE)
+- `4-verify-implementation.md` (correct)
+
+**Fix:** Deleted `3-verify-implementation.md`
+
+#### 2. Sparse Array Bug from unset in process_conditionals (CRITICAL)
+
+**Location:** `scripts/common-functions.sh:788, 795, 815, 822`
+
+**Problem:** Using `unset 'stack_tag_type[$index]'` creates sparse arrays with gaps. When arrays are iterated or checked with `${#array[@]}`, indices may be skipped causing undefined behavior.
+
+**Fix:** Replaced `unset` with array slice reassignment:
+```bash
+# Instead of: unset 'stack_tag_type[$last_type_index]'
+# Now uses: stack_tag_type=("${stack_tag_type[@]:0:$last_type_index}")
+```
+
+#### 3. @agent-os/ PHASE Syntax Documentation (CRITICAL - verified OK)
+
+**Location:** `CLAUDE.md`
+
+**Problem:** The `{{PHASE X: @agent-os/commands/...}}` syntax was not documented, though it works correctly via `process_phase_commands()`.
+
+**Fix:** Added documentation entry to Template Syntax section in CLAUDE.md.
+
+#### 4. Missing TOC Entries for 3 Standards (CRITICAL)
+
+**Location:** `profiles/default/standards/_toc.md`
+
+**Problem:** Three standards existed but were NOT listed in TOC:
+- `global/deprecation.md`
+- `frontend/routing.md`
+- `frontend/state-management.md`
+
+**Fix:** Added all 3 entries to `_toc.md`
+
+### Modified Files (4 files)
+
+- `profiles/default/commands/implement-tasks/single-agent/3-verify-implementation.md` - DELETED
+- `scripts/common-functions.sh` - Fixed sparse array handling (4 locations)
+- `CLAUDE.md` - Added PHASE syntax documentation
+- `profiles/default/standards/_toc.md` - Added 3 missing standard entries
+
+### Verification Results
+
+✅ All scripts pass bash syntax check (`bash -n`)
+✅ No duplicate numbered files remain
+✅ Template syntax fully documented
+✅ All standards listed in TOC
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| Issues fixed | 4 (3 active + 1 documentation) |
+| Files modified | 3 |
+| Files deleted | 1 |
+| Lines added | ~10 |
+
+---
+
 ## [2025-12-22 17:02] Critical Re-Analysis - Final Cleanup
 
 ### Description

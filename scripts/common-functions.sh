@@ -785,14 +785,16 @@ process_conditionals() {
                 if [[ "$expected_type" != "IF" ]]; then
                     print_warning "Mismatched template tags: {{ENDIF $flag_name}} closes {{UNLESS ...}}"
                 fi
-                unset 'stack_tag_type[$last_type_index]'
+                # Use array slice to avoid sparse array issues
+                stack_tag_type=("${stack_tag_type[@]:0:$last_type_index}")
             fi
 
             # Pop should_include from stack
             if [[ ${#stack_should_include[@]} -gt 0 ]]; then
                 local last_index=$((${#stack_should_include[@]} - 1))
                 should_include="${stack_should_include[$last_index]}"
-                unset 'stack_should_include[$last_index]'
+                # Use array slice to avoid sparse array issues
+                stack_should_include=("${stack_should_include[@]:0:$last_index}")
             else
                 should_include=true
             fi
@@ -812,14 +814,16 @@ process_conditionals() {
                 if [[ "$expected_type" != "UNLESS" ]]; then
                     print_warning "Mismatched template tags: {{ENDUNLESS $flag_name}} closes {{IF ...}}"
                 fi
-                unset 'stack_tag_type[$last_type_index]'
+                # Use array slice to avoid sparse array issues
+                stack_tag_type=("${stack_tag_type[@]:0:$last_type_index}")
             fi
 
             # Pop should_include from stack
             if [[ ${#stack_should_include[@]} -gt 0 ]]; then
                 local last_index=$((${#stack_should_include[@]} - 1))
                 should_include="${stack_should_include[$last_index]}"
-                unset 'stack_should_include[$last_index]'
+                # Use array slice to avoid sparse array issues
+                stack_should_include=("${stack_should_include[@]:0:$last_index}")
             else
                 should_include=true
             fi
