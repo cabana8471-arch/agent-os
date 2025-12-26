@@ -1,5 +1,10 @@
 # Process for Orchestrating a Spec's Implementation
 
+<!-- Reference Syntax Note:
+  - `agent-os/path` or `@agent-os/path`: Runtime file paths agents read using the Read tool
+  - `{{workflows/...}}`: Template syntax processed at compile/install time
+-->
+
 Now that we have a spec and tasks list ready for implementation, we will proceed with orchestrating implementation of each task group by a dedicated agent using the following MULTI-PHASE process.
 
 Follow each of these phases and their individual workflows IN SEQUENCE:

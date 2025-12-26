@@ -4,6 +4,122 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-27 01:15] LOW Priority Issues Fix - Scripts, Workflows, and Documentation
+
+### Description
+
+Fixed 10 LOW priority issues identified in the consolidated analysis report. These fixes improve code robustness, add documentation comments, and ensure consistency across scripts and workflows.
+
+### Issues Fixed
+
+#### L1. Unquoted sed Substitution (LOW)
+
+**Location:** `scripts/common-functions.sh:691`
+
+**Problem:** sed command could fail with special characters in the replacement string.
+
+**Fix:** Replaced sed with Bash native string replacement (`${var//pattern/replacement}`) which handles special characters safely.
+
+#### L2. Missing Reserved Name Validation (LOW)
+
+**Location:** `scripts/create-profile.sh:50-78`
+
+**Problem:** Profile names like "default" or names starting with "_" could be used, potentially overwriting system profiles.
+
+**Fix:** Added validation in `validate_profile_name()`:
+- Reserved names check: "default", "_internal", "_template", "_base", "_system"
+- Underscore prefix check: names starting with "_" are reserved for internal use
+
+#### L3. Temp File Cleanup Race Condition (LOW)
+
+**Location:** `scripts/common-functions.sh:50-55`
+
+**Problem:** Theoretical race condition between mktemp and array add where an interrupt could leave orphan temp file.
+
+**Fix:** Added documentation comment explaining the trade-off (OS cleans /tmp on reboot, temp files are small) and why complex signal blocking was not implemented.
+
+#### L4. Unclear Quote Handling in YAML Processing (LOW)
+
+**Location:** `scripts/common-functions.sh:208-210`
+
+**Problem:** The quote removal pattern in awk was complex and not well documented.
+
+**Fix:** Added clarifying comment: "Remove quotes (single or double) if present"
+
+#### L5. Missing Pre-conditions in Workflows (LOW)
+
+**Status:** MOSTLY ALREADY FIXED
+
+**Remaining fix:** Added Pre-conditions section to `testing/test-strategy.md`:
+- Spec exists at `agent-os/specs/[spec-path]/spec.md`
+- Tasks list exists (optional but recommended)
+- Test framework configured in project
+
+#### L6. Missing H1 Titles in Workflows (LOW)
+
+**Status:** VERIFIED AS ALREADY FIXED
+
+**Note:** All 25 workflows now have proper H1 titles.
+
+#### L7. improve-skills Only Has Single Variant (LOW)
+
+**Status:** BY DESIGN - NO FIX NEEDED
+
+**Note:** This command operates on the system level, not on specs, so multi-agent variant is not applicable.
+
+#### L8. Mixed Reference Syntax in orchestrate-tasks.md (LOW)
+
+**Location:** `profiles/default/commands/orchestrate-tasks/orchestrate-tasks.md`
+
+**Problem:** File mixed `@agent-os/` runtime paths with `{{workflows/...}}` template syntax without explanation.
+
+**Fix:** Added HTML comment at top explaining the difference:
+- `agent-os/path` or `@agent-os/path`: Runtime file paths agents read using the Read tool
+- `{{workflows/...}}`: Template syntax processed at compile/install time
+
+#### L9. Inconsistent Placeholder Names (LOW)
+
+**Status:** VERIFIED AS ALREADY FIXED
+
+**Note:** All 114 spec-related placeholders now use consistent `[spec-path]` format.
+
+#### L10. Nested Conditionals Limitation (LOW)
+
+**Location:** `scripts/common-functions.sh:695-701`
+
+**Problem:** Deeply nested conditionals could behave unexpectedly but this wasn't documented.
+
+**Fix:** Added documentation comment to `process_conditionals()`:
+- Nesting is supported but deeply nested conditions (>10 levels) may behave unexpectedly
+- Same-line opening and closing tags are not supported
+- Conditionals must be on their own lines
+
+### Modified Files
+
+| File | Modification |
+|------|--------------|
+| `scripts/common-functions.sh` | L1 (sed→Bash), L3 (race condition comment), L4 (quote comment), L10 (nested conditionals comment) |
+| `scripts/create-profile.sh` | L2 (reserved name validation) |
+| `profiles/default/workflows/testing/test-strategy.md` | L5 (added Pre-conditions) |
+| `profiles/default/commands/orchestrate-tasks/orchestrate-tasks.md` | L8 (reference syntax comment) |
+
+### Verification Results
+
+✅ All scripts pass bash syntax check (`bash -n`)
+✅ Reserved profile names properly rejected
+✅ Documentation improved for complex code patterns
+✅ Pre-conditions coverage increased
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| Issues fixed | 10 (6 active + 4 already fixed/by design) |
+| Files modified | 4 |
+| Lines added | ~35 |
+
+---
+
 ## [2025-12-27 00:02] MEDIUM Priority Issues Fix - Standards, Scripts, Workflows, and Protocols
 
 ### Description

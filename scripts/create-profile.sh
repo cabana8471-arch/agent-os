@@ -56,6 +56,21 @@ validate_profile_name() {
         return 1
     fi
 
+    # Check for reserved profile names that should not be overwritten
+    local reserved_names=("default" "_internal" "_template" "_base" "_system")
+    for reserved in "${reserved_names[@]}"; do
+        if [[ "$name" == "$reserved" ]]; then
+            print_error "Profile name '$name' is reserved and cannot be used"
+            return 1
+        fi
+    done
+
+    # Check for names starting with underscore (reserved convention)
+    if [[ "$name" == _* ]]; then
+        print_error "Profile names starting with '_' are reserved for internal use"
+        return 1
+    fi
+
     # Check for path traversal attempts
     if [[ "$name" == *".."* ]] || [[ "$name" == *"/"* ]] || [[ "$name" == *"\\"* ]]; then
         print_error "Profile name contains invalid characters (path traversal attempt detected)"

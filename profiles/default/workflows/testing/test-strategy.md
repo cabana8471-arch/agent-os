@@ -1,5 +1,11 @@
 # Test Strategy Workflow
 
+## Pre-conditions
+
+- [ ] Spec exists at `agent-os/specs/[spec-path]/spec.md`
+- [ ] Tasks list exists at `agent-os/specs/[spec-path]/tasks.md` (optional but recommended)
+- [ ] Test framework configured in project
+
 ## Workflow
 
 ### Step 1: Understand Testing Context

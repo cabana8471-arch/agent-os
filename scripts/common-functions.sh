@@ -49,6 +49,10 @@ trap _agent_os_cleanup EXIT INT TERM
 
 # Create a tracked temporary file
 # Usage: local temp=$(create_temp_file)
+# Note: There's a theoretical race condition between mktemp and array add where
+# an interrupt could leave an orphan temp file. In practice, the OS will clean
+# /tmp on reboot, and temp files are small. This is an acceptable trade-off
+# for code simplicity versus adding complex signal blocking.
 create_temp_file() {
     local temp_file
     temp_file=$(mktemp) || {
@@ -201,7 +205,7 @@ get_yaml_value() {
                 sub(/[[:space:]]+#.*$/, "")
             }
 
-            # Remove quotes if present
+            # Remove quotes (single or double) if present
             gsub(/^["'"'"']/, "")
             gsub(/["'"'"']$/, "")
 
@@ -684,11 +688,17 @@ replace_playwright_tools() {
 
     local playwright_tools="mcp__playwright__browser_close, mcp__playwright__browser_console_messages, mcp__playwright__browser_handle_dialog, mcp__playwright__browser_evaluate, mcp__playwright__browser_file_upload, mcp__playwright__browser_fill_form, mcp__playwright__browser_install, mcp__playwright__browser_press_key, mcp__playwright__browser_type, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_network_requests, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_drag, mcp__playwright__browser_hover, mcp__playwright__browser_select_option, mcp__playwright__browser_tabs, mcp__playwright__browser_wait_for, mcp__ide__getDiagnostics, mcp__ide__executeCode, mcp__playwright__browser_resize"
 
-    echo "$tools" | sed "s/Playwright/$playwright_tools/g"
+    # Use Bash string replacement to avoid sed special character issues
+    echo "${tools//Playwright/$playwright_tools}"
 }
 
 # Process conditional compilation tags ({{IF}}, {{UNLESS}}, {{ENDIF}}, {{ENDUNLESS}})
 # Ignores {{orchestrated_standards}} and other placeholders
+#
+# Limitations:
+#   - Nesting is supported but deeply nested conditions (>10 levels) may behave unexpectedly
+#   - Same-line opening and closing tags are not supported
+#   - Conditionals must be on their own lines
 process_conditionals() {
     local content=$1
     local use_claude_code_subagents=$2
