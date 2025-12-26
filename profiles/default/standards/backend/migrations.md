@@ -7,3 +7,6 @@
 - **Index Management**: Create indexes on large tables carefully, using concurrent options when available to avoid locks
 - **Naming Conventions**: Use clear, descriptive names that indicate what the migration does
 - **Version Control**: Always commit migrations to version control and never modify existing migrations after deployment
+
+## Related Standards
+- `backend/models.md` - Schema design and constraints

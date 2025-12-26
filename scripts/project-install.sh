@@ -5,7 +5,13 @@
 # Installs Agent OS into a project's codebase
 # =============================================================================
 
-set -e  # Exit on error
+set -euo pipefail  # Exit on error, undefined vars, and pipe failures
+
+# Validate HOME is set before proceeding
+if [[ -z "${HOME:-}" ]]; then
+    echo "Error: HOME environment variable is not set" >&2
+    exit 1
+fi
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -26,6 +32,7 @@ CLAUDE_CODE_COMMANDS=""
 USE_CLAUDE_CODE_SUBAGENTS=""
 AGENT_OS_COMMANDS=""
 STANDARDS_AS_CLAUDE_CODE_SKILLS=""
+LAZY_LOAD_WORKFLOWS=""
 RE_INSTALL="false"
 OVERWRITE_ALL="false"
 OVERWRITE_STANDARDS="false"
@@ -49,6 +56,7 @@ Options:
     --use-claude-code-subagents [BOOL]       Use Claude Code subagents (default: from config.yml)
     --agent-os-commands [BOOL]               Install agent-os commands (default: from config.yml)
     --standards-as-claude-code-skills [BOOL] Use Claude Code Skills for standards (default: from config.yml)
+    --lazy-load-workflows [BOOL]             Use file references instead of embedding workflows (default: from config.yml)
     --re-install                             Delete and reinstall Agent OS
     --overwrite-all                          Overwrite all existing files during update
     --overwrite-standards                    Overwrite existing standards during update
@@ -76,8 +84,8 @@ EOF
 
 parse_arguments() {
     while [[ $# -gt 0 ]]; do
-        # Normalize flag by replacing underscores with hyphens
-        local flag="${1//_/-}"
+        # Normalize flag by replacing ALL underscores with hyphens (global substitution)
+        local flag="${1//\_/-}"
 
         case $flag in
             --profile)
@@ -98,6 +106,10 @@ parse_arguments() {
                 ;;
             --standards-as-claude-code-skills)
                 read STANDARDS_AS_CLAUDE_CODE_SKILLS shift_count <<< "$(parse_bool_flag "$STANDARDS_AS_CLAUDE_CODE_SKILLS" "$2")"
+                shift $shift_count
+                ;;
+            --lazy-load-workflows)
+                read LAZY_LOAD_WORKFLOWS shift_count <<< "$(parse_bool_flag "$LAZY_LOAD_WORKFLOWS" "$2")"
                 shift $shift_count
                 ;;
             --re-install)
@@ -153,18 +165,8 @@ load_configuration() {
     EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS="${USE_CLAUDE_CODE_SUBAGENTS:-$BASE_USE_CLAUDE_CODE_SUBAGENTS}"
     EFFECTIVE_AGENT_OS_COMMANDS="${AGENT_OS_COMMANDS:-$BASE_AGENT_OS_COMMANDS}"
     EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS="${STANDARDS_AS_CLAUDE_CODE_SKILLS:-$BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS}"
+    EFFECTIVE_LAZY_LOAD_WORKFLOWS="${LAZY_LOAD_WORKFLOWS:-$BASE_LAZY_LOAD_WORKFLOWS}"
     EFFECTIVE_VERSION="$BASE_VERSION"
-
-    # Validate profile directory exists (inheritance chain validation)
-    local profile_dir="$BASE_DIR/profiles/$EFFECTIVE_PROFILE"
-    if [[ ! -d "$profile_dir" ]]; then
-        print_error "Profile directory not found: $profile_dir"
-        print_error "Available profiles:"
-        for p in "$BASE_DIR/profiles"/*/; do
-            [[ -d "$p" ]] && echo "  - $(basename "$p")"
-        done
-        exit 1
-    fi
 
     # Validate configuration using common function (may override EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS if dependency not met)
     validate_config "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$EFFECTIVE_PROFILE"
@@ -175,6 +177,7 @@ load_configuration() {
     print_verbose "  Use Claude Code subagents: $EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS"
     print_verbose "  Agent OS commands: $EFFECTIVE_AGENT_OS_COMMANDS"
     print_verbose "  Standards as Claude Code Skills: $EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS"
+    print_verbose "  Lazy load workflows: $EFFECTIVE_LAZY_LOAD_WORKFLOWS"
 }
 
 # -----------------------------------------------------------------------------
@@ -221,7 +224,9 @@ install_claude_code_commands_with_delegation() {
     local commands_count=0
     local target_dir="$PROJECT_DIR/.claude/commands/agent-os"
 
-    mkdir -p "$target_dir"
+    if [[ "$DRY_RUN" != "true" ]]; then
+        mkdir -p "$target_dir"
+    fi
 
     while read file; do
         # Process multi-agent command files OR orchestrate-tasks special case
@@ -233,10 +238,7 @@ install_claude_code_commands_with_delegation() {
                 local dest="$target_dir/${cmd_name}.md"
 
                 # Compile with workflow and standards injection (includes conditional compilation)
-                if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE"; then
-                    print_error "Failed to compile command: $source"
-                    continue
-                fi
+                local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE")
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
@@ -269,10 +271,7 @@ install_claude_code_commands_without_delegation() {
                 if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
                     local dest="$PROJECT_DIR/.claude/commands/agent-os/orchestrate-tasks.md"
                     # Compile without PHASE embedding for orchestrate-tasks
-                    if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" ""; then
-                        print_error "Failed to compile command: $source"
-                        continue
-                    fi
+                    local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
                     if [[ "$DRY_RUN" == "true" ]]; then
                         INSTALLED_FILES+=("$dest")
                     fi
@@ -286,10 +285,7 @@ install_claude_code_commands_without_delegation() {
                         local dest="$PROJECT_DIR/.claude/commands/agent-os/$cmd_name.md"
 
                         # Compile with PHASE embedding (mode="embed")
-                        if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed"; then
-                            print_error "Failed to compile command: $source"
-                            continue
-                        fi
+                        local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed")
                         if [[ "$DRY_RUN" == "true" ]]; then
                             INSTALLED_FILES+=("$dest")
                         fi
@@ -315,8 +311,10 @@ install_claude_code_agents() {
 
     local agents_count=0
     local target_dir="$PROJECT_DIR/.claude/agents/agent-os"
-    
-    mkdir -p "$target_dir"
+
+    if [[ "$DRY_RUN" != "true" ]]; then
+        mkdir -p "$target_dir"
+    fi
 
     while read file; do
         # Include all agent files (flatten structure - no subfolders in output)
@@ -328,10 +326,7 @@ install_claude_code_agents() {
                 local dest="$target_dir/$filename"
                 
                 # Compile with workflow and standards injection
-                if ! compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" ""; then
-                    print_error "Failed to compile agent: $source"
-                    continue
-                fi
+                local compiled=$(compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
@@ -370,10 +365,7 @@ install_agent_os_commands() {
                 fi
 
                 # Compile with workflow and standards injection and PHASE embedding
-                if ! compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed"; then
-                    print_error "Failed to compile command: $source"
-                    continue
-                fi
+                local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed")
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
@@ -401,7 +393,8 @@ create_agent_os_folder() {
     # Create the configuration file
     local config_file=$(write_project_config "$EFFECTIVE_VERSION" "$EFFECTIVE_PROFILE" \
         "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" \
-        "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS")
+        "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" \
+        "$EFFECTIVE_LAZY_LOAD_WORKFLOWS")
     if [[ "$DRY_RUN" == "true" && -n "$config_file" ]]; then
         INSTALLED_FILES+=("$config_file")
     fi
@@ -427,6 +420,7 @@ perform_installation() {
     echo -e "  Claude Code commands: ${YELLOW}$EFFECTIVE_CLAUDE_CODE_COMMANDS${NC}"
     echo -e "  Use Claude Code subagents: ${YELLOW}$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS${NC}"
     echo -e "  Standards as Claude Code Skills: ${YELLOW}$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS${NC}"
+    echo -e "  Lazy load workflows: ${YELLOW}$EFFECTIVE_LAZY_LOAD_WORKFLOWS${NC}"
     echo -e "  Agent OS commands: ${YELLOW}$EFFECTIVE_AGENT_OS_COMMANDS${NC}"
     echo ""
 
@@ -493,7 +487,12 @@ perform_installation() {
 
     if [[ "$DRY_RUN" == "true" ]]; then
         echo ""
-        read -p "Proceed with actual installation? (y/n): " -n 1 -r
+        # Timeout after 60 seconds to prevent hanging in CI/CD environments
+        if ! read -t 60 -p "Proceed with actual installation? (y/n): " -n 1 -r; then
+            echo
+            print_warning "Input timeout - defaulting to 'no'"
+            return
+        fi
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             DRY_RUN="false"
@@ -508,6 +507,49 @@ perform_installation() {
     fi
 }
 
+# Global variable to track backup directory for cleanup on success
+_REINSTALL_BACKUP_DIR=""
+
+# Remove backup directory after successful reinstallation
+cleanup_reinstall_backup() {
+    if [[ -n "$_REINSTALL_BACKUP_DIR" ]] && [[ -d "$_REINSTALL_BACKUP_DIR" ]]; then
+        rm -rf "$_REINSTALL_BACKUP_DIR"
+        print_verbose "Removed backup directory: $_REINSTALL_BACKUP_DIR"
+    fi
+}
+
+# Restore from backup on failure
+rollback_reinstall_from_backup() {
+    if [[ -n "$_REINSTALL_BACKUP_DIR" ]] && [[ -d "$_REINSTALL_BACKUP_DIR" ]]; then
+        print_warning "Re-installation failed! Rolling back from backup..."
+
+        # Restore backed up directories
+        if [[ -d "$_REINSTALL_BACKUP_DIR/agent-os" ]]; then
+            cp -rp "$_REINSTALL_BACKUP_DIR/agent-os" "$PROJECT_DIR/" 2>/dev/null || true
+        fi
+        if [[ -d "$_REINSTALL_BACKUP_DIR/.claude/agents/agent-os" ]]; then
+            mkdir -p "$PROJECT_DIR/.claude/agents"
+            cp -rp "$_REINSTALL_BACKUP_DIR/.claude/agents/agent-os" "$PROJECT_DIR/.claude/agents/" 2>/dev/null || true
+        fi
+        if [[ -d "$_REINSTALL_BACKUP_DIR/.claude/commands/agent-os" ]]; then
+            mkdir -p "$PROJECT_DIR/.claude/commands"
+            cp -rp "$_REINSTALL_BACKUP_DIR/.claude/commands/agent-os" "$PROJECT_DIR/.claude/commands/" 2>/dev/null || true
+        fi
+        if [[ -d "$_REINSTALL_BACKUP_DIR/.claude/skills" ]]; then
+            mkdir -p "$PROJECT_DIR/.claude"
+            # Only restore Agent OS skills
+            for skill_dir in "$_REINSTALL_BACKUP_DIR/.claude/skills"/*; do
+                if [[ -d "$skill_dir" ]]; then
+                    cp -rp "$skill_dir" "$PROJECT_DIR/.claude/skills/" 2>/dev/null || true
+                fi
+            done
+        fi
+
+        rm -rf "$_REINSTALL_BACKUP_DIR"
+        print_error "Rollback complete. Previous installation restored."
+    fi
+}
+
 # Handle re-installation
 handle_reinstallation() {
     print_section "Re-installation"
@@ -516,14 +558,20 @@ handle_reinstallation() {
     echo ""
 
     # Check for Claude Code files
-    if [[ -d "$PROJECT_DIR/.claude/agents/agent-os" ]] || [[ -d "$PROJECT_DIR/.claude/commands/agent-os" ]]; then
+    if [[ -d "$PROJECT_DIR/.claude/agents/agent-os" ]] || [[ -d "$PROJECT_DIR/.claude/commands/agent-os" ]] || [[ -d "$PROJECT_DIR/.claude/skills" ]]; then
         print_warning "This will also DELETE:"
         [[ -d "$PROJECT_DIR/.claude/agents/agent-os" ]] && echo "  - .claude/agents/agent-os/"
         [[ -d "$PROJECT_DIR/.claude/commands/agent-os" ]] && echo "  - .claude/commands/agent-os/"
+        [[ -d "$PROJECT_DIR/.claude/skills" ]] && echo "  - .claude/skills/ (Agent OS skills)"
         echo ""
     fi
 
-    read -p "Are you sure you want to proceed? (y/n): " -n 1 -r
+    # Timeout after 60 seconds to prevent hanging in CI/CD environments
+    if ! read -t 60 -p "Are you sure you want to proceed? (y/n): " -n 1 -r; then
+        echo
+        print_warning "Input timeout - re-installation cancelled"
+        exit 0
+    fi
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         print_status "Re-installation cancelled"
@@ -531,15 +579,80 @@ handle_reinstallation() {
     fi
 
     if [[ "$DRY_RUN" != "true" ]]; then
+        # Create backup for rollback capability using mktemp for uniqueness
+        # This prevents race conditions when multiple reinstalls run simultaneously
+        _REINSTALL_BACKUP_DIR=$(mktemp -d "$PROJECT_DIR/.agent-os-reinstall-backup.XXXXXX") || {
+            print_error "Failed to create backup directory"
+            exit 1
+        }
+        print_verbose "Created backup directory: $_REINSTALL_BACKUP_DIR"
+
+        # Backup existing directories before deletion
+        if [[ -d "$PROJECT_DIR/agent-os" ]]; then
+            cp -rp "$PROJECT_DIR/agent-os" "$_REINSTALL_BACKUP_DIR/" 2>/dev/null || true
+        fi
+        if [[ -d "$PROJECT_DIR/.claude/agents/agent-os" ]]; then
+            mkdir -p "$_REINSTALL_BACKUP_DIR/.claude/agents"
+            cp -rp "$PROJECT_DIR/.claude/agents/agent-os" "$_REINSTALL_BACKUP_DIR/.claude/agents/" 2>/dev/null || true
+        fi
+        if [[ -d "$PROJECT_DIR/.claude/commands/agent-os" ]]; then
+            mkdir -p "$_REINSTALL_BACKUP_DIR/.claude/commands"
+            cp -rp "$PROJECT_DIR/.claude/commands/agent-os" "$_REINSTALL_BACKUP_DIR/.claude/commands/" 2>/dev/null || true
+        fi
+
+        # Backup Agent OS skills
+        if [[ -d "$PROJECT_DIR/.claude/skills" ]]; then
+            # Get list of skills that belong to Agent OS (from standards)
+            if [[ -f "$PROJECT_DIR/agent-os/config.yml" ]]; then
+                local project_profile
+                project_profile=$(get_yaml_value "$PROJECT_DIR/agent-os/config.yml" "profile" "default")
+                mkdir -p "$_REINSTALL_BACKUP_DIR/.claude/skills"
+                while read file; do
+                    if [[ "$file" == standards/* ]] && [[ "$file" == *.md ]]; then
+                        local skill_name=$(echo "$file" | sed 's|^standards/||' | sed 's|\.md$||' | sed 's|/|-|g')
+                        if [[ -d "$PROJECT_DIR/.claude/skills/$skill_name" ]]; then
+                            cp -rp "$PROJECT_DIR/.claude/skills/$skill_name" "$_REINSTALL_BACKUP_DIR/.claude/skills/" 2>/dev/null || true
+                        fi
+                    fi
+                done < <(get_profile_files "$project_profile" "$BASE_DIR" "standards")
+            fi
+        fi
+
+        print_verbose "Backup created at: $_REINSTALL_BACKUP_DIR"
+
+        # Set up trap for rollback on error
+        trap 'rollback_reinstall_from_backup' ERR
+
         print_status "Removing existing installation..."
         rm -rf "$PROJECT_DIR/agent-os"
         rm -rf "$PROJECT_DIR/.claude/agents/agent-os"
         rm -rf "$PROJECT_DIR/.claude/commands/agent-os"
+
+        # Remove Agent OS skills (individual skill directories)
+        if [[ -d "$PROJECT_DIR/.claude/skills" ]] && [[ -f "$_REINSTALL_BACKUP_DIR/agent-os/config.yml" ]]; then
+            local project_profile
+            project_profile=$(get_yaml_value "$_REINSTALL_BACKUP_DIR/agent-os/config.yml" "profile" "default")
+            while read file; do
+                if [[ "$file" == standards/* ]] && [[ "$file" == *.md ]]; then
+                    local skill_name=$(echo "$file" | sed 's|^standards/||' | sed 's|\.md$||' | sed 's|/|-|g')
+                    if [[ -d "$PROJECT_DIR/.claude/skills/$skill_name" ]]; then
+                        rm -rf "$PROJECT_DIR/.claude/skills/$skill_name"
+                    fi
+                fi
+            done < <(get_profile_files "$project_profile" "$BASE_DIR" "standards")
+        fi
+
         echo "✓ Existing installation removed"
         echo ""
     fi
 
     perform_installation
+
+    # Reinstallation successful - remove backup and disable rollback trap
+    if [[ "$DRY_RUN" != "true" ]]; then
+        trap - ERR
+        cleanup_reinstall_backup
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -557,6 +670,9 @@ main() {
 
     # Validate base installation using common function
     validate_base_installation
+
+    # Run pre-flight checks (disk space, permissions, required tools)
+    preflight_check
 
     # Load configuration
     load_configuration

@@ -1,5 +1,7 @@
 ## Responsive design best practices
 
+> **Related Standards**: See `performance.md` for Core Web Vitals and mobile optimization, `css.md` for responsive styling methodology.
+
 - **Mobile-First Development**: Start with mobile layout and progressively enhance for larger screens
 - **Standard Breakpoints**: Consistently use standard breakpoints across the application (e.g., mobile, tablet, desktop)
 - **Fluid Layouts**: Use percentage-based widths and flexible containers that adapt to screen size

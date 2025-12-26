@@ -9,9 +9,9 @@ Display a summary of what was implemented.
 IF all tasks are now marked as done (with `- [x]`) in tasks.md, display this message to user:
 
 ```
-All tasks have been implemented: `agent-os/specs/[this-spec]/tasks.md`.
+All tasks have been implemented: `agent-os/specs/[spec-path]/tasks.md`.
 
-NEXT STEP 👉 Run `3-verify-implementation.md` to verify the implementation.
+NEXT STEP 👉 Run `3-code-review.md` to review the code before verification.
 ```
 
 IF there are still tasks in tasks.md that have yet to be implemented (marked unfinished with `- [ ]`) then display this message to user:
@@ -29,3 +29,12 @@ IMPORTANT: Ensure that the tasks list is ALIGNED and DOES NOT CONFLICT with the 
 
 {{standards/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Error Recovery
+
+If this step fails:
+
+1. **Build/compile errors**: Fix errors iteratively, check standards compliance
+2. **Test failures**: Review test requirements, fix implementation or adjust tests if spec changed
+3. **Stuck on task**: Break into smaller sub-tasks, or ask user for clarification
+4. **Need rollback**: Run `/rollback` to revert to a known-good state

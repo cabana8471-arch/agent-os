@@ -4,6 +4,6 @@ Carefully read and execute the instructions in the following files IN SEQUENCE, 
 
 Instructions to follow in sequence:
 
-{{PHASE 1: @agent-os/commands/shape-spec/1-initialize-spec.md}}
+{{PHASE 1: @agent-os/commands/shape-spec/single-agent/1-initialize-spec.md}}
 
-{{PHASE 2: @agent-os/commands/shape-spec/2-shape-spec.md}}
+{{PHASE 2: @agent-os/commands/shape-spec/single-agent/2-shape-spec.md}}

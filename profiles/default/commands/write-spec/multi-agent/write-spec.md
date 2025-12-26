@@ -16,7 +16,9 @@ Once the spec-writer has created `spec.md` output the following to inform the us
 ```
 Your spec.md is ready!
 
-✅ Spec document created: `[spec-path]`
+Spec document created: `[spec-path]`
+
+RECOMMENDED: Run `/verify-spec` to validate the specification before creating tasks.
 
 NEXT STEP 👉 Run `/create-tasks` to generate your tasks list for this spec.
 ```

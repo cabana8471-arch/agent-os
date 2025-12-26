@@ -1,5 +1,11 @@
 # Spec Writing
 
+## Pre-conditions
+
+- [ ] Requirements documented at `agent-os/specs/[spec-path]/planning/requirements.md`
+- [ ] Spec folder structure exists at `agent-os/specs/[spec-path]/`
+- [ ] Product tech stack documented at `agent-os/product/tech-stack.md`
+
 ## Core Responsibilities
 
 1. **Analyze Requirements**: Load and analyze requirements and visual assets thoroughly
@@ -13,10 +19,10 @@
 Read and understand all inputs and THINK HARD:
 ```bash
 # Read the requirements document
-cat agent-os/specs/[current-spec]/planning/requirements.md
+cat agent-os/specs/[spec-path]/planning/requirements.md
 
 # Check for visual assets
-ls -la agent-os/specs/[current-spec]/planning/visuals/ 2>/dev/null | grep -v "^total" | grep -v "^d"
+ls -la agent-os/specs/[spec-path]/planning/visuals/ 2>/dev/null | grep -v "^total" | grep -v "^d"
 ```
 
 Parse and analyze:
@@ -46,7 +52,7 @@ Document your findings for use in the specification.
 
 ### Step 3: Create Core Specification
 
-Write the main specification to `agent-os/specs/[current-spec]/spec.md`.
+Write the main specification to `agent-os/specs/[spec-path]/spec.md`.
 
 DO NOT write actual code in the spec.md document. Just describe the requirements clearly and concisely.
 
@@ -90,6 +96,21 @@ Follow this structure exactly when creating the content of `spec.md`:
 - [up to 10 concise descriptions of specific features that are out of scope and MUST NOT be built in this spec]
 ```
 
+## Output Summary
+
+> **Follow Output Protocol**: See `{{protocols/output-protocol}}` for context optimization guidelines.
+
+After writing the specification, return ONLY this summary:
+
+```
+✅ Specification written.
+📁 Report: agent-os/specs/[spec-path]/spec.md
+📊 Summary: [X] requirements | [Y] user stories | [Z] reuse items
+⏱️ Next: Ready for task creation
+```
+
+**Do NOT include** detailed requirements, user stories, or specification content in the conversation response.
+
 ## Important Constraints
 
 1. **Always search for reusable code** before specifying new components
@@ -97,3 +118,13 @@ Follow this structure exactly when creating the content of `spec.md`:
 3. **Do NOT write actual code** in the spec
 4. **Keep each section short**, with clear, direct, skimmable specifications
 5. **Do NOT deviate from the template above** and do not add additional sections
+
+## Error Recovery
+
+If spec writing encounters issues:
+1. **Missing requirements.md:** Run research-spec workflow first to gather requirements
+2. **No reusable code found:** Document that implementation should create new patterns
+3. **Conflicting requirements:** Flag in spec and recommend running `/verify-spec` after completion
+4. **Visual assets not found:** Document feature without visual references; recommend user add visuals
+
+For other errors, refer to `{{workflows/implementation/error-recovery}}`

@@ -1,5 +1,7 @@
 ## Database query best practices
 
+> **Related Standards**: See `security.md` for SQL injection prevention context, `performance.md` for optimization thresholds, `models.md` for index design on foreign keys.
+
 - **Prevent SQL Injection**: Always use parameterized queries or ORM methods; never interpolate user input into SQL strings
 - **Avoid N+1 Queries**: Use eager loading or joins to fetch related data in a single query instead of multiple queries
 - **Select Only Needed Data**: Request only the columns you need rather than using SELECT * for better performance

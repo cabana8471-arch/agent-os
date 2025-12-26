@@ -12,7 +12,7 @@ Once you've created mission.md, output the following message:
 
 Review it to ensure it matches your vision and strategic goals for this product.
 
-NEXT STEP 👉 Run the command, `3-create-roadmap.md`
+NEXT STEP 👉 Run `3-create-roadmap.md` to create the product roadmap.
 ```
 {{ENDUNLESS compiled_single_command}}
 
@@ -23,3 +23,11 @@ IMPORTANT: Ensure the product mission is ALIGNED and DOES NOT CONFLICT with the 
 
 {{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Error Recovery
+
+If this step fails:
+
+1. **Missing product info**: Return to `1-product-concept.md` to gather missing information
+2. **File write error**: Check permissions, try alternative location, or output to user for manual save
+3. **Unclear vision**: Ask user for clarification on product goals before creating mission

@@ -1,11 +1,45 @@
-Create your final verification report in `agent-os/specs/[this-spec]/verifications/final-verification.md`.
+# Create Verification Report
+
+## Purpose
+
+This workflow guides the creation of the final verification report that summarizes all implementation and verification results.
+
+## Pre-conditions
+
+- [ ] All tasks from `tasks.md` have been implemented
+- [ ] Code review has been completed (if applicable)
+- [ ] All tests have been executed via `run-all-tests.md`
+- [ ] Task verification has been completed via `verify-tasks.md`
+
+## Workflow
+
+### Step 1: Gather Verification Data
+
+Collect results from:
+1. `agent-os/specs/[spec-path]/tasks.md` - task completion status
+2. `agent-os/specs/[spec-path]/implementation/` - implementation docs
+3. `agent-os/specs/[spec-path]/verification/` - any existing verification docs
+4. Test run results (from test suite output)
+
+### Step 2: Determine Overall Status
+
+Based on gathered data, determine the report status:
+- **✅ Passed** - All tasks complete, all tests passing, no critical issues
+- **⚠️ Passed with Issues** - All tasks complete but minor issues or warnings exist
+- **❌ Failed** - Tasks incomplete OR tests failing OR critical issues found
+
+### Step 3: Create Report
+
+Create your final verification report in `agent-os/specs/[spec-path]/verification/final-verification.md`.
+
+**Note:** The folder is `verification/` (singular), not `verifications/`.
 
 The content of this report should follow this structure:
 
 ```markdown
 # Verification Report: [Spec Title]
 
-**Spec:** `[spec-name]`
+**Spec:** `[spec-path]`
 **Date:** [Current Date]
 **Verifier:** implementation-verifier
 **Status:** ✅ Passed | ⚠️ Passed with Issues | ❌ Failed
@@ -78,3 +112,33 @@ The content of this report should follow this structure:
 ### Notes
 [Any additional context about test results, known issues, or regressions]
 ```
+
+## Output Summary
+
+> **Follow Output Protocol**: See `{{protocols/output-protocol}}` for context optimization guidelines.
+
+Return ONLY this summary:
+
+```
+✅ Verification report created.
+📁 Report: [spec-path]/verification/final-verification.md
+📊 Summary: Tasks: [status] | Tests: [status] | Docs: [status]
+⏱️ Next: Run update-roadmap workflow to mark feature complete
+```
+
+**Do NOT include** detailed verification results, task lists, or test summaries in the conversation response.
+
+## Important Constraints
+
+- Report MUST be created in `verification/` folder (singular), not `verifications/`
+- All status indicators must match actual verification results
+- Do not mark tasks as complete unless they are fully verified
+
+## Error Recovery
+
+If verification report cannot be created:
+1. **Missing verification data:** Run `verify-tasks.md` and `run-all-tests.md` first
+2. **Conflicting results:** Document discrepancies in the report and mark as "⚠️ Passed with Issues"
+3. **Critical failures found:** Mark report as "❌ Failed" and list required fixes
+
+For other errors, refer to `{{workflows/implementation/error-recovery}}`

@@ -7,4 +7,8 @@
 - **Consistent Indentation**: Use consistent indentation (spaces or tabs) and configure your editor/linter to enforce it
 - **Remove Dead Code**: Delete unused code, commented-out blocks, and imports rather than leaving them as clutter
 - **Backward compatibility only when required:** Unless specifically instructed otherwise, assume you do not need to write additional code logic to handle backward compatibility.
-- **DRY Principle**: Avoid duplication by extracting common logic into reusable functions or modules
+- **DRY Principle (with judgment)**: Extract truly duplicated logic into reusable functions when the same code appears 3+ times; avoid premature abstraction for similar-but-different code
+
+## Related Standards
+- `global/commenting.md` - Code documentation practices
+- `global/conventions.md` - Project conventions

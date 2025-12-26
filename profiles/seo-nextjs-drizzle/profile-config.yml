@@ -1,0 +1,18 @@
+inherits_from: nextjs
+
+# Override doar fișierele care diferă de nextjs profile
+exclude_inherited_files:
+  # Global overrides
+  - standards/global/tech-stack.md
+  - standards/global/validation.md
+  - standards/global/error-handling.md
+  - standards/global/security.md
+  - standards/global/project-structure.md
+
+  # Backend overrides (Drizzle + BetterAuth vs Prisma + generic auth)
+  - standards/backend/database.md
+  - standards/backend/api.md
+  - standards/backend/server-actions.md
+
+  # Testing override (Vitest vs Jest)
+  - standards/testing/test-writing.md

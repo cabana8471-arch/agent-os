@@ -1,0 +1,19 @@
+inherits_from: default
+
+# WordPress profile overrides: exclude generic standards and replace with WP-specific
+exclude_inherited_files:
+  # Override these with WordPress-specific versions:
+  - standards/global/security.md
+  - standards/global/validation.md
+  - standards/global/logging.md
+  - standards/global/coding-style.md
+  - standards/global/commenting.md
+  - standards/global/error-handling.md
+  - standards/global/performance.md
+  - standards/testing/test-writing.md
+  - standards/frontend/accessibility.md
+  - standards/backend/queries.md
+  # Exclude generic standards that don't apply to WordPress:
+  - standards/backend/api.md          # WordPress uses WP REST API, not generic REST
+  - standards/backend/migrations.md   # WordPress uses dbDelta(), not migrations
+  - standards/backend/models.md       # WordPress uses WP_Query, not ORM models

@@ -9,6 +9,14 @@
 5. **Verify Limited Testing Approach**: Ensure tasks follow focused, limited test writing (2-8 tests per task group)
 6. **Document Findings**: Create verification report
 
+## Pre-conditions
+
+Before running this workflow:
+- [ ] Spec exists at `agent-os/specs/[spec-path]/spec.md`
+- [ ] Requirements documented at `agent-os/specs/[spec-path]/planning/requirements.md`
+- [ ] Write-spec workflow has been completed
+- [ ] User Q&A data is available for comparison
+
 ## Workflow
 
 ### Step 1: Gather User Q&A Data
@@ -23,7 +31,7 @@ Read these materials that were provided to you so that you can use them as the b
 Perform these checks:
 
 #### Check 1: Requirements Accuracy
-Read `agent-os/specs/[this-spec]/planning/requirements.md` and verify:
+Read `agent-os/specs/[spec-path]/planning/requirements.md` and verify:
 - All user answers from the Q&A are accurately captured
 - No answers are missing or misrepresented
 - Any follow-up questions and answers are included
@@ -36,7 +44,7 @@ Check for existence of any visual assets in the planning/visuals folder by runni
 
 ```bash
 # Check for visual assets
-ls -la [spec-path]/planning/visuals/ 2>/dev/null | grep -v "^total" | grep -v "^d"
+ls -la agent-os/specs/[spec-path]/planning/visuals/ 2>/dev/null | grep -v "^total" | grep -v "^d"
 ```
 
 IF visuals exist verify they're mentioned in requirements.md
@@ -46,22 +54,22 @@ IF visuals exist verify they're mentioned in requirements.md
 Perform these detailed content checks:
 
 #### Check 3: Visual Asset Analysis (if visuals exist)
-If visual files were found in Check 4:
-1. **Read each visual file** in `agent-os/specs/[this-spec]/planning/visuals/`
+If visual files were found in Check 2:
+1. **Read each visual file** in `agent-os/specs/[spec-path]/planning/visuals/`
 2. **Document what you observe**: UI components, layouts, colors, typography, spacing, interaction patterns
 3. **Verify these design elements appear in**:
-   - `agent-os/specs/[this-spec]/spec.md` - Check if visual elements, layout or important visual details are present:
+   - `agent-os/specs/[spec-path]/spec.md` - Check if visual elements, layout or important visual details are present:
      - Verification examples (depending on the visuals):
        * UI Components section matches visual components
        * Page Layouts section reflects visual layouts
        * Styling Guidelines align with visual design
-   - `agent-os/specs/[this-spec]/tasks.md` - Confirm at least some tasks specifically reference:
+   - `agent-os/specs/[spec-path]/tasks.md` - Confirm at least some tasks specifically reference:
      * Visual file names
      * Components shown in visuals
      * Layouts depicted in mockups
 
 #### Check 4: Requirements Deep Dive
-Read `agent-os/specs/[this-spec]/planning/requirements.md` and create a mental list of:
+Read `agent-os/specs/[spec-path]/planning/requirements.md` and create a mental list of:
 - **Explicit features requested**: What the user specifically said they want
 - **Constraints stated**: Limitations, performance needs, or technical requirements
 - **Out-of-scope items**: What the user explicitly said NOT to include
@@ -69,7 +77,7 @@ Read `agent-os/specs/[this-spec]/planning/requirements.md` and create a mental l
 - **Implicit needs**: Things implied but not directly stated
 
 #### Check 5: Core Specification Validation
-Read `agent-os/specs/[this-spec]/spec.md` and verify each section:
+Read `agent-os/specs/[spec-path]/spec.md` and verify each section:
 1. **Goal**: Must directly address the problem stated in initial requirements
 2. **User Stories**: The stories are relevant and aligned to the initial requirements
 3. **Core Requirements**: Only include features from the requirement stated explicit features
@@ -83,7 +91,7 @@ Look for these issues:
 - Missing reusability opportunities (if user provided any)
 
 #### Check 6: Task List Detailed Validation
-Read `agent-os/specs/[this-spec]/tasks.md` and check each task group's tasks:
+Read `agent-os/specs/[spec-path]/tasks.md` and check each task group's tasks:
 1. **Test Writing Limits**: Verify test writing follows limited approach:
    - Each implementation task group (1-3) should specify writing 2-8 focused tests maximum
    - Test verification subtasks should run ONLY the newly written tests, not entire suite
@@ -105,7 +113,11 @@ Review all specifications for:
 
 ### Step 4: Document Findings and Issues
 
-Create `agent-os/specs/[this-spec]/verification/spec-verification.md` with the following structure:
+When documenting issues, use the Issue Tracking Protocol to assign unique Issue IDs:
+
+> See `{{protocols/issue-tracking}}` for ID format, severity levels, and tracking procedures.
+
+Create `agent-os/specs/[spec-path]/verification/spec-verification.md` with the following structure:
 
 ```markdown
 # Specification Verification Report
@@ -240,31 +252,24 @@ Create `agent-os/specs/[this-spec]/verification/spec-verification.md` with the f
 
 ### Step 5: Output Summary
 
-OUTPUT the following:
+> **Follow Output Protocol**: See `{{protocols/output-protocol}}` for context optimization guidelines.
+
+Return ONLY this summary:
 
 ```
-Specification verification complete!
-
-✅ Verified requirements accuracy
-✅ Checked structural integrity
-✅ Validated specification alignment
-✅ Verified test writing limits (2-8 tests per task group, ~16-34 total)
-[If visuals] ✅ Analyzed [X] visual assets
-⚠️ Reusability check: [Y issues found]
-
-[If passed]
-All specifications accurately reflect requirements, follow limited testing approach, and properly leverage existing code
-
-[If issues found]
-⚠️ Found [X] issues requiring attention:
-- [Number] reusability issues
-- [Number] test writing limit violations
-- [Number] critical issues
-- [Number] minor issues
-- [Number] over-engineering concerns
-
-See agent-os/specs/[this-spec]/verification/spec-verification.md for full details.
+✅ Spec verification complete.
+📁 Report: agent-os/specs/[spec-path]/verification/spec-verification.md
+📊 Summary: [X] critical | [Y] minor | [Z] over-engineering concerns
+⏱️ Status: [Passed / Issues Found / Failed]
 ```
+
+**Do NOT include** detailed issue descriptions, check results, or recommendations in the conversation response.
+
+## Quality Gates
+
+Before marking spec verification as complete, ensure all items in the Spec Completeness Checklist are verified:
+
+> See `{{protocols/verification-checklist}}` for the Spec Completeness Checklist.
 
 ## Important Constraints
 
@@ -274,7 +279,7 @@ See agent-os/specs/[this-spec]/verification/spec-verification.md for full detail
 - Expected test counts: Implementation task groups should write 2-8 tests each, testing-engineer adds maximum 10, total ~16-34 tests per feature
 - Don't add new requirements or specifications
 - Focus on alignment and accuracy, not style
-- Be specific about any issues found
+- Be specific about any issues found - assign Issue IDs using `{{protocols/issue-tracking}}`
 - Distinguish between critical and minor issues
 - Always check visuals even if not mentioned in requirements
 - Document everything for transparency

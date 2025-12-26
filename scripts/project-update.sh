@@ -5,7 +5,13 @@
 # Updates Agent OS installation in a project
 # =============================================================================
 
-set -e  # Exit on error
+set -eo pipefail  # Exit on error and pipe failures
+
+# Validate HOME is set before proceeding
+if [[ -z "${HOME:-}" ]]; then
+    echo "Error: HOME environment variable is not set" >&2
+    exit 1
+fi
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -26,6 +32,7 @@ CLAUDE_CODE_COMMANDS=""
 USE_CLAUDE_CODE_SUBAGENTS=""
 AGENT_OS_COMMANDS=""
 STANDARDS_AS_CLAUDE_CODE_SKILLS=""
+LAZY_LOAD_WORKFLOWS=""
 RE_INSTALL="false"
 OVERWRITE_ALL="false"
 OVERWRITE_AGENTS="false"
@@ -51,6 +58,7 @@ Options:
     --use-claude-code-subagents [BOOL]       Use Claude Code subagents with delegation (true/false)
     --agent-os-commands [BOOL]               Install agent-os commands for other tools (true/false)
     --standards-as-claude-code-skills [BOOL] Use Claude Code Skills for standards (true/false)
+    --lazy-load-workflows [BOOL]             Use file references instead of embedding workflows (true/false)
     --re-install                             Delete and reinstall Agent OS
     --overwrite-all                          Overwrite all existing files
     --overwrite-agents                       Overwrite existing agent files
@@ -78,8 +86,8 @@ EOF
 
 parse_arguments() {
     while [[ $# -gt 0 ]]; do
-        # Normalize flag by replacing underscores with hyphens
-        local flag="${1//_/-}"
+        # Normalize flag by replacing ALL underscores with hyphens (global substitution)
+        local flag="${1//\_/-}"
 
         case $flag in
             --profile)
@@ -100,6 +108,10 @@ parse_arguments() {
                 ;;
             --standards-as-claude-code-skills)
                 read STANDARDS_AS_CLAUDE_CODE_SKILLS shift_count <<< "$(parse_bool_flag "$STANDARDS_AS_CLAUDE_CODE_SKILLS" "$2")"
+                shift $shift_count
+                ;;
+            --lazy-load-workflows)
+                read LAZY_LOAD_WORKFLOWS shift_count <<< "$(parse_bool_flag "$LAZY_LOAD_WORKFLOWS" "$2")"
                 shift $shift_count
                 ;;
             --re-install)
@@ -177,6 +189,7 @@ load_configurations() {
     EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS="${USE_CLAUDE_CODE_SUBAGENTS:-$BASE_USE_CLAUDE_CODE_SUBAGENTS}"
     EFFECTIVE_AGENT_OS_COMMANDS="${AGENT_OS_COMMANDS:-$BASE_AGENT_OS_COMMANDS}"
     EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS="${STANDARDS_AS_CLAUDE_CODE_SKILLS:-$BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS}"
+    EFFECTIVE_LAZY_LOAD_WORKFLOWS="${LAZY_LOAD_WORKFLOWS:-$BASE_LAZY_LOAD_WORKFLOWS}"
     EFFECTIVE_VERSION="$BASE_VERSION"
 
     # Validate config but suppress warnings (will show after user confirms update)
@@ -189,6 +202,7 @@ load_configurations() {
     print_verbose "  Use Claude Code subagents: $BASE_USE_CLAUDE_CODE_SUBAGENTS"
     print_verbose "  Agent OS commands: $BASE_AGENT_OS_COMMANDS"
     print_verbose "  Standards as Claude Code Skills: $BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS"
+    print_verbose "  Lazy load workflows: $BASE_LAZY_LOAD_WORKFLOWS"
 
     print_verbose "Project configuration:"
     print_verbose "  Version: $PROJECT_VERSION"
@@ -197,6 +211,7 @@ load_configurations() {
     print_verbose "  Use Claude Code subagents: $PROJECT_USE_CLAUDE_CODE_SUBAGENTS"
     print_verbose "  Agent OS commands: $PROJECT_AGENT_OS_COMMANDS"
     print_verbose "  Standards as Claude Code Skills: $PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS"
+    print_verbose "  Lazy load workflows: $PROJECT_LAZY_LOAD_WORKFLOWS"
 
     print_verbose "Effective configuration:"
     print_verbose "  Profile: $EFFECTIVE_PROFILE"
@@ -204,6 +219,7 @@ load_configurations() {
     print_verbose "  Use Claude Code subagents: $EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS"
     print_verbose "  Agent OS commands: $EFFECTIVE_AGENT_OS_COMMANDS"
     print_verbose "  Standards as Claude Code Skills: $EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS"
+    print_verbose "  Lazy load workflows: $EFFECTIVE_LAZY_LOAD_WORKFLOWS"
 }
 
 # -----------------------------------------------------------------------------
@@ -235,7 +251,8 @@ update_standards() {
 
     while read file; do
         if [[ "$file" == standards/* ]]; then
-            local source=$(get_profile_file "$PROJECT_PROFILE" "$file" "$BASE_DIR")
+            # Use EFFECTIVE_PROFILE to support profile switching during update
+            local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
             local dest="$PROJECT_DIR/agent-os/$file"
 
             if [[ -f "$source" ]]; then
@@ -259,7 +276,7 @@ update_standards() {
                 fi
             fi
         fi
-    done < <(get_profile_files "$PROJECT_PROFILE" "$BASE_DIR" "standards")
+    done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "standards")
 
     if [[ "$DRY_RUN" != "true" ]]; then
         if [[ $standards_new -gt 0 ]]; then
@@ -277,6 +294,7 @@ update_standards() {
 # Update single-agent commands
 update_single_agent_commands() {
     print_status "Updating single-agent commands..."
+
     local commands_updated=0
     local commands_skipped=0
     local commands_new=0
@@ -284,7 +302,8 @@ update_single_agent_commands() {
     while read file; do
         # Process single-agent command files OR orchestrate-tasks special case
         if [[ "$file" == commands/*/single-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
-            local source=$(get_profile_file "$PROJECT_PROFILE" "$file" "$BASE_DIR")
+            # Use EFFECTIVE_PROFILE to support profile switching during update
+            local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
             if [[ -f "$source" ]]; then
                 # Handle orchestrate-tasks specially (preserve folder structure)
                 if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
@@ -311,12 +330,12 @@ update_single_agent_commands() {
                     fi
                     if [[ "$DRY_RUN" != "true" ]]; then
                         # Compile with PHASE embedding (mode="embed")
-                        compile_command "$source" "$dest" "$BASE_DIR" "$PROJECT_PROFILE" "embed"
+                        compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed"
                     fi
                 fi
             fi
         fi
-    done < <(get_profile_files "$PROJECT_PROFILE" "$BASE_DIR" "commands")
+    done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
 
     if [[ "$DRY_RUN" != "true" ]]; then
         if [[ $commands_new -gt 0 ]]; then
@@ -348,7 +367,8 @@ update_claude_code_files() {
         # Process multi-agent command files
         while read file; do
             if [[ "$file" == commands/*/multi-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
-                local source=$(get_profile_file "$PROJECT_PROFILE" "$file" "$BASE_DIR")
+                # Use EFFECTIVE_PROFILE to support profile switching during update
+                local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
                 if [[ -f "$source" ]]; then
                     # Extract command name
                     if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
@@ -374,17 +394,18 @@ update_claude_code_files() {
                         fi
                         if [[ "$DRY_RUN" != "true" ]]; then
                             # Compile with workflow and standards injection (includes conditional compilation)
-                            compile_command "$source" "$dest" "$BASE_DIR" "$PROJECT_PROFILE" ""
+                            compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" ""
                         fi
                     fi
                 fi
             fi
-        done < <(get_profile_files "$PROJECT_PROFILE" "$BASE_DIR" "commands")
+        done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
     else
         # Process single-agent command files (only non-numbered files, with PHASE embedding)
         while read file; do
             if [[ "$file" == commands/*/single-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
-                local source=$(get_profile_file "$PROJECT_PROFILE" "$file" "$BASE_DIR")
+                # Use EFFECTIVE_PROFILE to support profile switching during update
+                local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
                 if [[ -f "$source" ]]; then
                     # Handle orchestrate-tasks specially
                     if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
@@ -405,7 +426,7 @@ update_claude_code_files() {
                                 print_verbose "New file: $dest"
                             fi
                             if [[ "$DRY_RUN" != "true" ]]; then
-                                compile_command "$source" "$dest" "$BASE_DIR" "$PROJECT_PROFILE" ""
+                                compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" ""
                             fi
                         fi
                     else
@@ -431,20 +452,21 @@ update_claude_code_files() {
                                 fi
                                 if [[ "$DRY_RUN" != "true" ]]; then
                                     # Compile with PHASE embedding (mode="embed")
-                                    compile_command "$source" "$dest" "$BASE_DIR" "$PROJECT_PROFILE" "embed"
+                                    compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed"
                                 fi
                             fi
                         fi
                     fi
                 fi
             fi
-        done < <(get_profile_files "$PROJECT_PROFILE" "$BASE_DIR" "commands")
+        done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
     fi
 
-    # Update static agents
-    get_profile_files "$PROJECT_PROFILE" "$BASE_DIR" "agents" | while read file; do
+    # Update static agents (use process substitution to preserve variable scope)
+    while read file; do
         if [[ "$file" == agents/*.md ]] && [[ "$file" != agents/templates/* ]]; then
-            local source=$(get_profile_file "$PROJECT_PROFILE" "$file" "$BASE_DIR")
+            # Use EFFECTIVE_PROFILE to support profile switching during update
+            local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
             if [[ -f "$source" ]]; then
                 local agent_name=$(basename "$file" .md)
                 local dest="$PROJECT_DIR/.claude/agents/agent-os/${agent_name}.md"
@@ -461,39 +483,12 @@ update_claude_code_files() {
                         print_verbose "New file: $dest"
                     fi
                     if [[ "$DRY_RUN" != "true" ]]; then
-                        compile_agent "$source" "$dest" "$BASE_DIR" "$PROJECT_PROFILE" ""
+                        compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" ""
                     fi
                 fi
             fi
         fi
-    done
-
-    # Update specification agents
-    get_profile_files "$PROJECT_PROFILE" "$BASE_DIR" "agents/specification" | while read file; do
-        if [[ "$file" == agents/specification/*.md ]]; then
-            local source=$(get_profile_file "$PROJECT_PROFILE" "$file" "$BASE_DIR")
-            if [[ -f "$source" ]]; then
-                local agent_name=$(basename "$file" .md)
-                local dest="$PROJECT_DIR/.claude/agents/agent-os/${agent_name}.md"
-
-                if should_skip_file "$dest" "$OVERWRITE_ALL" "$OVERWRITE_AGENTS" "agent"; then
-                    SKIPPED_FILES+=("$dest")
-                    print_verbose "Skipped: $dest"
-                else
-                    if [[ -f "$dest" ]]; then
-                        UPDATED_FILES+=("$dest")
-                        print_verbose "Updated: $dest"
-                    else
-                        NEW_FILES+=("$dest")
-                        print_verbose "New file: $dest"
-                    fi
-                    if [[ "$DRY_RUN" != "true" ]]; then
-                        compile_agent "$source" "$dest" "$BASE_DIR" "$PROJECT_PROFILE" ""
-                    fi
-                fi
-            fi
-        fi
-    done
+    done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "agents")
 
     if [[ "$DRY_RUN" != "true" ]]; then
         # Count commands separately
@@ -561,7 +556,8 @@ update_agent_os_folder() {
     # Update the configuration file
     write_project_config "$EFFECTIVE_VERSION" "$PROJECT_PROFILE" \
         "$PROJECT_CLAUDE_CODE_COMMANDS" "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" \
-        "$PROJECT_AGENT_OS_COMMANDS" "$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS"
+        "$PROJECT_AGENT_OS_COMMANDS" "$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS" \
+        "$PROJECT_LAZY_LOAD_WORKFLOWS"
 
     if [[ "$DRY_RUN" != "true" ]]; then
         echo "✓ Updated agent-os folder"
@@ -578,6 +574,7 @@ perform_update() {
     echo -e "  Claude Code commands: ${YELLOW}$PROJECT_CLAUDE_CODE_COMMANDS${NC}"
     echo -e "  Use Claude Code subagents: ${YELLOW}$PROJECT_USE_CLAUDE_CODE_SUBAGENTS${NC}"
     echo -e "  Standards as Claude Code Skills: ${YELLOW}$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS${NC}"
+    echo -e "  Lazy load workflows: ${YELLOW}$PROJECT_LAZY_LOAD_WORKFLOWS${NC}"
     echo -e "  Agent OS commands: ${YELLOW}$PROJECT_AGENT_OS_COMMANDS${NC}"
     echo ""
 
@@ -595,8 +592,7 @@ perform_update() {
             update_claude_code_files
             echo ""
         else
-            # Update commands without delegation
-            # TODO: Need to implement this update function
+            # Update commands without delegation (uses single-agent mode with PHASE embedding)
             update_claude_code_files
             echo ""
         fi
@@ -640,7 +636,12 @@ perform_update() {
             echo ""
         fi
 
-        read -p "Proceed with actual update? (y/n): " -n 1 -r
+        # Timeout after 60 seconds to prevent hanging in CI/CD environments
+        if ! read -t 60 -p "Proceed with actual update? (y/n): " -n 1 -r; then
+            echo
+            print_warning "Input timeout - defaulting to 'no'"
+            return
+        fi
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             DRY_RUN="false"
@@ -765,7 +766,12 @@ prompt_update_confirmation() {
     fi
     echo ""
 
-    read -p "Do you want to proceed? (y/n): " -n 1 -r
+    # Timeout after 60 seconds to prevent hanging in CI/CD environments
+    if ! read -t 60 -p "Do you want to proceed? (y/n): " -n 1 -r; then
+        echo
+        print_warning "Input timeout - update cancelled"
+        return 1
+    fi
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         return 0  # user confirmed
@@ -774,7 +780,47 @@ prompt_update_confirmation() {
     fi
 }
 
+# Global variable to track backup directory for cleanup on success
+_UPDATE_BACKUP_DIR=""
+
+# Remove backup directory after successful update
+cleanup_backup_on_success() {
+    if [[ -n "$_UPDATE_BACKUP_DIR" ]] && [[ -d "$_UPDATE_BACKUP_DIR" ]]; then
+        rm -rf "$_UPDATE_BACKUP_DIR"
+        print_verbose "Removed backup directory: $_UPDATE_BACKUP_DIR"
+    fi
+}
+
+# Restore from backup on failure
+rollback_from_backup() {
+    if [[ -n "$_UPDATE_BACKUP_DIR" ]] && [[ -d "$_UPDATE_BACKUP_DIR" ]]; then
+        print_warning "Update failed! Rolling back from backup..."
+
+        # Restore backed up directories
+        if [[ -d "$_UPDATE_BACKUP_DIR/standards" ]]; then
+            mkdir -p "$PROJECT_DIR/agent-os"
+            cp -rp "$_UPDATE_BACKUP_DIR/standards" "$PROJECT_DIR/agent-os/" 2>/dev/null || true
+        fi
+        if [[ -d "$_UPDATE_BACKUP_DIR/commands" ]]; then
+            mkdir -p "$PROJECT_DIR/agent-os"
+            cp -rp "$_UPDATE_BACKUP_DIR/commands" "$PROJECT_DIR/agent-os/" 2>/dev/null || true
+        fi
+        if [[ -d "$_UPDATE_BACKUP_DIR/.claude/agents/agent-os" ]]; then
+            mkdir -p "$PROJECT_DIR/.claude/agents"
+            cp -rp "$_UPDATE_BACKUP_DIR/.claude/agents/agent-os" "$PROJECT_DIR/.claude/agents/" 2>/dev/null || true
+        fi
+        if [[ -d "$_UPDATE_BACKUP_DIR/.claude/commands/agent-os" ]]; then
+            mkdir -p "$PROJECT_DIR/.claude/commands"
+            cp -rp "$_UPDATE_BACKUP_DIR/.claude/commands/agent-os" "$PROJECT_DIR/.claude/commands/" 2>/dev/null || true
+        fi
+
+        rm -rf "$_UPDATE_BACKUP_DIR"
+        print_error "Rollback complete. Previous installation restored."
+    fi
+}
+
 # Perform cleanup before update - delete everything except specs/ and product/
+# Creates backup first for rollback on failure
 perform_update_cleanup() {
     if [[ "$DRY_RUN" == "true" ]]; then
         print_warning "Dry run: Would prepare for update..."
@@ -782,6 +828,31 @@ perform_update_cleanup() {
     else
         print_status "Preparing for update..."
         echo ""
+
+        # Create backup directory for rollback capability using mktemp for uniqueness
+        # This prevents race conditions when multiple updates run simultaneously
+        _UPDATE_BACKUP_DIR=$(mktemp -d "$PROJECT_DIR/.agent-os-backup.XXXXXX") || {
+            print_error "Failed to create backup directory"
+            exit 1
+        }
+        print_verbose "Created backup directory: $_UPDATE_BACKUP_DIR"
+
+        # Backup existing directories before deletion
+        if [[ -d "$PROJECT_DIR/agent-os/standards" ]]; then
+            cp -rp "$PROJECT_DIR/agent-os/standards" "$_UPDATE_BACKUP_DIR/" 2>/dev/null || true
+        fi
+        if [[ -d "$PROJECT_DIR/agent-os/commands" ]]; then
+            cp -rp "$PROJECT_DIR/agent-os/commands" "$_UPDATE_BACKUP_DIR/" 2>/dev/null || true
+        fi
+        if [[ -d "$PROJECT_DIR/.claude/agents/agent-os" ]]; then
+            mkdir -p "$_UPDATE_BACKUP_DIR/.claude/agents"
+            cp -rp "$PROJECT_DIR/.claude/agents/agent-os" "$_UPDATE_BACKUP_DIR/.claude/agents/" 2>/dev/null || true
+        fi
+        if [[ -d "$PROJECT_DIR/.claude/commands/agent-os" ]]; then
+            mkdir -p "$_UPDATE_BACKUP_DIR/.claude/commands"
+            cp -rp "$PROJECT_DIR/.claude/commands/agent-os" "$_UPDATE_BACKUP_DIR/.claude/commands/" 2>/dev/null || true
+        fi
+        print_verbose "Backup created at: $_UPDATE_BACKUP_DIR"
     fi
 
     # Delete agent-os/standards/ (will be reinstalled)
@@ -888,7 +959,8 @@ main() {
        [[ "$PROJECT_CLAUDE_CODE_COMMANDS" != "$EFFECTIVE_CLAUDE_CODE_COMMANDS" ]] || \
        [[ "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" != "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" ]] || \
        [[ "$PROJECT_AGENT_OS_COMMANDS" != "$EFFECTIVE_AGENT_OS_COMMANDS" ]] || \
-       [[ "$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS" != "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" ]]; then
+       [[ "$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS" != "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" ]] || \
+       [[ "$PROJECT_LAZY_LOAD_WORKFLOWS" != "$EFFECTIVE_LAZY_LOAD_WORKFLOWS" ]]; then
         has_config_diff="true"
     fi
 
@@ -899,6 +971,11 @@ main() {
         validate_config "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$EFFECTIVE_PROFILE" "true"
         echo ""
 
+        # Set up trap to rollback on error (only for non-dry-run)
+        if [[ "$DRY_RUN" != "true" ]]; then
+            trap 'rollback_from_backup' ERR
+        fi
+
         # Perform cleanup and update
         perform_update_cleanup
 
@@ -908,12 +985,17 @@ main() {
         PROJECT_USE_CLAUDE_CODE_SUBAGENTS="$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS"
         PROJECT_AGENT_OS_COMMANDS="$EFFECTIVE_AGENT_OS_COMMANDS"
         PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS="$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS"
-
-        # Re-validate configuration after variable reassignment to prevent invalid config
-        validate_config "$PROJECT_CLAUDE_CODE_COMMANDS" "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" "$PROJECT_AGENT_OS_COMMANDS" "$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$PROJECT_PROFILE" "false"
+        PROJECT_LAZY_LOAD_WORKFLOWS="$EFFECTIVE_LAZY_LOAD_WORKFLOWS"
 
         # Proceed with update
         perform_update
+
+        # Update successful - remove backup and disable rollback trap
+        if [[ "$DRY_RUN" != "true" ]]; then
+            trap - ERR
+            cleanup_backup_on_success
+        fi
+
         exit 0
     else
         print_status "Update cancelled by user"

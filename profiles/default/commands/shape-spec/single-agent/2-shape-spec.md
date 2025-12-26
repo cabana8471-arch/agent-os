@@ -6,14 +6,6 @@ Follow these instructions for researching this spec's requirements:
 
 ## Display confirmation and next step
 
-Once you've completed your research and documented it, output the following message:
-
-```
-✅ I have documented this spec's research and requirements in `agent-os/specs/[this-spec]/planning`.
-
-Next step: Run the command, `1-create-spec.md`.
-```
-
 After all steps complete, inform the user:
 
 ```
@@ -33,3 +25,11 @@ IMPORTANT: Ensure that your research questions and insights are ALIGNED and DOES
 
 {{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Error Recovery
+
+If this step fails:
+
+1. **Spec folder not found**: Return to `1-initialize-spec.md` to create the folder first
+2. **User doesn't respond to questions**: Wait politely, offer to simplify or skip optional questions
+3. **Incomplete requirements**: Document what's available, note gaps for user to address later

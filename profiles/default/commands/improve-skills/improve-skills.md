@@ -72,3 +72,13 @@ RECOMMENDATION 👉 Review and revise them further using these tips:
 For more best practices, refer to the official Claude Code documentation on Skills:
 https://docs.claude.com/en/docs/claude-code/skills
 ```
+
+## Error Recovery
+
+If any phase fails:
+
+1. **Skills Folder Not Found**: Create `.claude/skills/` directory and inform user no skills exist yet
+2. **Empty Skills Folder**: Report no skills found, suggest creating skill files first using Claude Code's skill creation feature
+3. **Permission Issues**: Flag files that couldn't be read or modified, continue with accessible files
+4. **Invalid Skill Format**: Document which files have invalid frontmatter or structure, suggest manual review
+5. **Documentation Fetch Failed**: Proceed with built-in knowledge of Claude Code Skills format

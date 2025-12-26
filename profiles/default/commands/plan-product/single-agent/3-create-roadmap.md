@@ -12,7 +12,7 @@ Once you've created roadmap.md, output the following message:
 
 Review it to ensure it aligns with how you see this product roadmap going forward.
 
-NEXT STEP 👉 Run the command, `4-create-tech-stack.md`
+NEXT STEP 👉 Run `4-create-tech-stack.md` to document the tech stack.
 ```
 {{ENDUNLESS compiled_single_command}}
 
@@ -23,3 +23,11 @@ IMPORTANT: Ensure the product roadmap is ALIGNED and DOES NOT CONFLICT with the 
 
 {{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Error Recovery
+
+If this step fails:
+
+1. **Missing mission.md**: Return to `2-create-mission.md` first
+2. **File write error**: Check permissions, try alternative location, or output to user for manual save
+3. **Roadmap scope unclear**: Ask user about feature priorities and timeline expectations

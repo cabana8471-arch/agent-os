@@ -1,0 +1,18 @@
+inherits_from: default
+
+# Next.js profile overrides: exclude generic standards and replace with Next.js-specific
+exclude_inherited_files:
+  # Override these with Next.js App Router-specific versions:
+  - standards/global/tech-stack.md
+  - standards/global/coding-style.md
+  - standards/frontend/components.md
+  - standards/backend/api.md
+  - standards/testing/test-writing.md
+
+  # Exclude generic ORM standards (Next.js has its own database.md with Prisma):
+  - standards/backend/models.md
+  - standards/backend/migrations.md
+  - standards/backend/queries.md
+
+  # NOTE: project-structure.md, environment.md, routing.md are Next.js-specific
+  # and don't exist in default profile (no need to exclude them)

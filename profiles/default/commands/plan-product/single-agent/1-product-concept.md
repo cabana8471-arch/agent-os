@@ -14,7 +14,7 @@ Once you've gathered all of the necessary information, output the following mess
 ```
 I have all the info I need to help you plan this product.
 
-NEXT STEP 👉 Run the command, `2-create-mission.md`
+NEXT STEP 👉 Run `2-create-mission.md` to create the product mission.
 ```
 {{ENDUNLESS compiled_single_command}}
 
@@ -25,3 +25,11 @@ When planning the product's tech stack, mission statement and roadmap, use the u
 
 {{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Error Recovery
+
+If this step fails:
+
+1. **User doesn't respond**: Politely ask if they'd like to continue or need more time
+2. **Incomplete information**: Document what you have, note gaps, and proceed - can be refined later
+3. **Conflicting information**: Ask clarifying questions to resolve contradictions

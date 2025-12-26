@@ -21,3 +21,11 @@ The user may provide information regarding their tech stack, which should take p
 
 {{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Error Recovery
+
+If this step fails:
+
+1. **Missing mission/roadmap**: Complete earlier steps first (`2-create-mission.md`, `3-create-roadmap.md`)
+2. **File write error**: Check permissions, try alternative location, or output to user for manual save
+3. **Tech stack unclear**: Default to common modern stack, note as "to be confirmed" for user review

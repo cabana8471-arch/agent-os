@@ -46,6 +46,17 @@ standards_as_claude_code_skills: false
 
 
 # ================================================
+# CONTEXT OPTIMIZATION: Lazy load workflows
+# Set to true to use file references instead of embedding workflow content
+# This significantly reduces context window usage (~75% reduction)
+# Agents will read workflow files on-demand using the Read tool
+#
+# Override this default when running project-install.sh by using the flag --lazy-load-workflows true/false
+# ================================================
+lazy_load_workflows: true
+
+
+# ================================================
 # PROFILE
 #
 # Use this profile by default.

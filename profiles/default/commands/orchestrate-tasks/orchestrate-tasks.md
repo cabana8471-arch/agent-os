@@ -6,11 +6,11 @@ Follow each of these phases and their individual workflows IN SEQUENCE:
 
 ## Multi-Phase Process
 
-### FIRST: Get tasks.md for this spec
+### PHASE 1: Get tasks.md for this spec
 
-IF you already know which spec we're working on and IF that spec folder has a `tasks.md` file, then use that and skip to the NEXT phase.
+IF you already know which spec we're working on and IF that spec folder has a `tasks.md` file, then use that and skip to PHASE 2.
 
-IF you don't already know which spec we're working on and IF that spec folder doesn't yet have a `tasks.md` THEN output the following request to the user:
+IF you don't already know which spec we're working on OR that spec folder doesn't yet have a `tasks.md`, THEN output the following request to the user:
 
 ```
 Please point me to a spec's `tasks.md` that you want to orchestrate implementation for.
@@ -21,217 +21,228 @@ If you don't have one yet, then run any of these commands first:
 /create-tasks
 ```
 
-### NEXT: Create orchestration.yml to serve as a roadmap for orchestration of task groups
+### PHASE 2: Create orchestration.yml with smart agent assignment
 
-In this spec's folder, create this file: `agent-os/specs/[this-spec]/orchestration.yml`.
+In this spec's folder, create: `agent-os/specs/[spec-path]/orchestration.yml`.
 
-Populate this file with with the names of each task group found in this spec's `tasks.md` and use this EXACT structure for the content of `orchestration.yml`:
+#### Smart Agent Assignment
+
+Analyze each task group name and content to auto-assign the appropriate agent and standards:
+
+**Assignment Rules:**
+- Task contains "API", "endpoint", "backend", "database", "server", "auth" → `implementer` + `backend/*` + `global/*` standards
+- Task contains "component", "UI", "style", "layout", "frontend", "page", "view" → `implementer` + `frontend/*` + `global/*` standards
+- Task contains "test", "spec", "coverage", "quality" → `test-strategist` + `testing/*` standards
+- Default → `implementer` + `global/*` standards
+
+Create `orchestration.yml` with auto-assigned values:
 
 ```yaml
+# Auto-generated orchestration plan
+# Review and modify assignments as needed
+
+spec_path: agent-os/specs/[spec-path]
+created_at: [current-date]
+
 task_groups:
   - name: [task-group-name]
+    agent: [auto-assigned-agent]
+    standards: [auto-assigned-standards]
+    status: pending
+
   - name: [task-group-name]
-  - name: [task-group-name]
-  # Repeat for each task group found in tasks.md
+    agent: [auto-assigned-agent]
+    standards: [auto-assigned-standards]
+    status: pending
+
+  # Repeat for each task group
 ```
+
+#### User Review
+
+After creating orchestration.yml, present it to the user:
+
+```
+I've created an orchestration plan with auto-assigned agents and standards:
+
+[Show task groups with assignments]
+
+Would you like to:
+1. Proceed with these assignments (default)
+2. Modify specific assignments
+
+Reply with your choice or specify changes (e.g., "Task 2 should use test-strategist").
+```
+
+If user requests changes, update orchestration.yml accordingly.
 
 {{IF use_claude_code_subagents}}
-### NEXT: Ask user to assign subagents to each task group
+### PHASE 3: Execute orchestrated implementation
 
-Next we must determine which subagents should be assigned to which task groups.  Ask the user to provide this info using the following request to user and WAIT for user's response:
+Loop through each task group in order and delegate to the assigned agent.
+
+**For each task group:**
+
+1. **Update status to in_progress** in orchestration.yml:
+   ```yaml
+   - name: [task-group-name]
+     status: in_progress
+     started_at: [timestamp]
+   ```
+
+2. **Delegate to the assigned agent subagent**
+
+   Provide to the subagent:
+   - The task group (parent task + all sub-tasks)
+   - The spec file: `agent-os/specs/[spec-path]/spec.md`
+   - Requirements: `agent-os/specs/[spec-path]/planning/requirements.md`
+   - Visuals: `agent-os/specs/[spec-path]/planning/visuals` (if exists)
+   {{UNLESS standards_as_claude_code_skills}}
+   - Standards files based on assignment in orchestration.yml:
+     {{workflows/implementation/compile-implementation-standards}}
+   {{ENDUNLESS standards_as_claude_code_skills}}
+
+   Instruct the subagent to:
+   1. Implement the assigned tasks
+   2. Mark completed tasks with `- [x]` in tasks.md
+   3. Return list of files created/modified
+
+3. **Code review for this task group**
+
+   Delegate to the **code-reviewer** subagent with files modified in this task group.
+   - If "Changes Required": Fix issues before proceeding
+   - Update review status in orchestration.yml:
+   ```yaml
+   - name: [task-group-name]
+     review_status: approved  # or "changes_required" → "fixed"
+   ```
+
+4. **Update status on completion**:
+   ```yaml
+   - name: [task-group-name]
+     status: completed  # or "failed" if errors occurred
+     completed_at: [timestamp]
+     files_modified: [list from subagent]
+   ```
+
+5. **Handle failures**:
+   If a task group fails:
+   - Update status to `failed` with error message
+   - Ask user: "Task group [name] failed. Options: 1) Retry, 2) Skip, 3) Abort"
+   - Log error to `agent-os/specs/[spec-path]/errors.log`
+
+### PHASE 4: Final Verification
+
+After ALL task groups are completed (with inline code reviews already done per task group):
+
+1. **Generate consolidated code review report**:
+   - Aggregate review results from each task group
+   - Create summary at `agent-os/specs/[spec-path]/implementation/code-review.md`
+
+2. **Delegate to the implementation-verifier subagent**
+
+   Provide to the subagent:
+   - The spec path: `agent-os/specs/[spec-path]`
+
+   Instruct the subagent to:
+   1. Run all final verifications according to its built-in workflow
+   2. Produce the final verification report at `agent-os/specs/[spec-path]/verification/final-verification.md`
+
+### PHASE 5: Output completion summary
 
 ```
-Please specify the name of each subagent to be assigned to each task group:
+Orchestration complete!
 
-1. [task-group-name]
-2. [task-group-name]
-3. [task-group-name]
-[repeat for each task-group you've added to orchestration.yml]
+Task Groups:
+[List each task group with status and completion time]
 
-Simply respond with the subagent names and corresponding task group number and I'll update orchestration.yml accordingly.
+Code Review: [Approved / Approved with Comments / Changes Required]
+Verification: [Passed / Issues Found]
+
+Files Modified: [total count]
+
+Reports:
+- Code review: agent-os/specs/[spec-path]/implementation/code-review.md
+- Verification: agent-os/specs/[spec-path]/verification/final-verification.md
+
+Orchestration log: agent-os/specs/[spec-path]/orchestration.yml
 ```
-
-Using the user's responses, update `orchestration.yml` to specify those subagent names.  `orchestration.yml` should end up looking like this:
-
-```yaml
-task_groups:
-  - name: [task-group-name]
-    claude_code_subagent: [subagent-name]
-  - name: [task-group-name]
-    claude_code_subagent: [subagent-name]
-  - name: [task-group-name]
-    claude_code_subagent: [subagent-name]
-  # Repeat for each task group found in tasks.md
-```
-
-For example, after this step, the `orchestration.yml` file might look like this (exact names will vary):
-
-```yaml
-task_groups:
-  - name: authentication-system
-    claude_code_subagent: backend-specialist
-  - name: user-dashboard
-    claude_code_subagent: frontend-specialist
-  - name: api-endpoints
-    claude_code_subagent: backend-specialist
-```
-{{ENDIF use_claude_code_subagents}}
-
-{{UNLESS standards_as_claude_code_skills}}
-### NEXT: Ask user to assign standards to each task group
-
-Next we must determine which standards should guide the implementation of each task group.  Ask the user to provide this info using the following request to user and WAIT for user's response:
-
-```
-Please specify the standard(s) that should be used to guide the implementation of each task group:
-
-1. [task-group-name]
-2. [task-group-name]
-3. [task-group-name]
-[repeat for each task-group you've added to orchestration.yml]
-
-For each task group number, you can specify any combination of the following:
-
-"all" to include all of your standards
-"global/*" to include all of the files inside of standards/global
-"frontend/css.md" to include the css.md standard file
-"none" to include no standards for this task group.
-```
-
-Using the user's responses, update `orchestration.yml` to specify those standards for each task group.  `orchestration.yml` should end up having AT LEAST the following information added to it:
-
-```yaml
-task_groups:
-  - name: [task-group-name]
-    standards:
-      - [users' 1st response for this task group]
-      - [users' 2nd response for this task group]
-      - [users' 3rd response for this task group]
-      # Repeat for all standards that the user specified for this task group
-  - name: [task-group-name]
-    standards:
-      - [users' 1st response for this task group]
-      - [users' 2nd response for this task group]
-      # Repeat for all standards that the user specified for this task group
-  # Repeat for each task group found in tasks.md
-```
-
-For example, after this step, the `orchestration.yml` file might look like this (exact names will vary):
-
-```yaml
-task_groups:
-  - name: authentication-system
-    standards:
-      - all
-  - name: user-dashboard
-    standards:
-      - global/*
-      - frontend/components.md
-      - frontend/css.md
-  - name: task-group-with-no-standards
-  - name: api-endpoints
-    standards:
-      - backend/*
-      - global/error-handling.md
-```
-
-Note: If the `use_claude_code_subagents` flag is enabled, the final `orchestration.yml` would include BOTH `claude_code_subagent` assignments AND `standards` for each task group.
-{{ENDUNLESS standards_as_claude_code_skills}}
-
-{{IF use_claude_code_subagents}}
-### NEXT: Delegate task groups implementations to assigned subagents
-
-Loop through each task group in `agent-os/specs/[this-spec]/tasks.md` and delegate its implementation to the assigned subagent specified in `orchestration.yml`.
-
-For each delegation, provide the subagent with:
-- The task group (including the parent task and all sub-tasks)
-- The spec file: `agent-os/specs/[this-spec]/spec.md`
-- Instruct subagent to:
-  - Perform their implementation
-  - Check off the task and sub-task(s) in `agent-os/specs/[this-spec]/tasks.md`
-{{UNLESS standards_as_claude_code_skills}}
-
-In addition to the above items, also instruct the subagent to closely adhere to the user's standards & preferences as specified in the following files.  To build the list of file references to give to the subagent, follow these instructions:
-
-{{workflows/implementation/compile-implementation-standards}}
-
-Provide all of the above to the subagent when delegating tasks for it to implement.
-{{ENDUNLESS standards_as_claude_code_skills}}
 {{ENDIF use_claude_code_subagents}}
 
 {{UNLESS use_claude_code_subagents}}
-### NEXT: Generate prompts
+### PHASE 3: Generate implementation prompts
 
-Now we must generate an ordered series of prompt texts, which will be used to direct the implementation of each task group listed in `orchestration.yml`.
+For users without subagent support, generate prompt files for manual execution.
 
-Follow these steps to generate this spec's ordered series of prompts texts, each in its own .md file located in `agent-os/specs/[this-spec]/implementation/prompts/`.
+Loop through each task group and create a prompt file at:
+`agent-os/specs/[spec-path]/implementation/prompts/[number]-[task-group-name].md`
 
-LOOP through EACH task group in `agent-os/specs/[this-spec]/tasks.md` and for each, use the following workflow to generate a markdown file with prompt text for each task group:
-
-#### Step 1. Create the prompt markdown file
-
-Create the prompt markdown file using this naming convention:
-`agent-os/specs/[this-spec]/implementation/prompts/[task-group-number]-[task-group-title].md`.
-
-For example, if the 3rd task group in tasks.md is named "Comment System" then create `3-comment-system.md`.
-
-#### Step 2. Populate the prompt file
-
-Populate the prompt markdown file using the following Prompt file content template.
-
-##### Bracket content replacements
-
-In the content template below, replace "[spec-title]" and "[this-spec]" with the current spec's title, and "[task-group-number]" with the current task group's number.
-
-{{UNLESS standards_as_claude_code_skills}}
-To replace "[orchestrated-standards]", use the following workflow:
-
-{{workflows/implementation/compile-implementation-standards}}
-{{ENDUNLESS standards_as_claude_code_skills}}
-
-#### Prompt file content template:
+**Prompt file template:**
 
 ```markdown
-We're continuing our implementation of [spec-title] by implementing task group number [task-group-number]:
+# Task Group [number]: [task-group-name]
 
-## Implement this task and its sub-tasks:
+## Tasks to Implement
 
-[paste entire task group including parent task, all of its' sub-tasks, and sub-bullet points]
+[paste entire task group including parent task and all sub-tasks]
 
-## Understand the context
+## Context
 
-Read @agent-os/specs/[this-spec]/spec.md to understand the context for this spec and where the current task fits into it.
+Read these files for context:
+- @agent-os/specs/[spec-path]/spec.md
+- @agent-os/specs/[spec-path]/planning/requirements.md
+- @agent-os/specs/[spec-path]/planning/visuals (if exists)
 
-Also read these further context and reference:
-- @agent-os/specs/[this-spec/]/planning/requirements.md
-- @agent-os/specs/[this-spec/]/planning/visuals
-
-## Perform the implementation
+## Implementation Instructions
 
 {{workflows/implementation/implement-tasks}}
 
 {{UNLESS standards_as_claude_code_skills}}
-## User Standards & Preferences Compliance
+## Standards to Follow
 
-IMPORTANT: Ensure that your implementation work is ALIGNED and DOES NOT CONFLICT with the user's preferences and standards as detailed in the following files:
-
-[orchestrated-standards]
+Follow these standards during implementation:
+[standards based on orchestration.yml assignment]
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Completion
+
+When done:
+1. Mark tasks as complete with `- [x]` in tasks.md
+2. Update orchestration.yml status to `completed`
 ```
 
-### Step 3: Output the list of created prompt files
-
-Output to user the following:
+### PHASE 4: Output prompt list
 
 ```
 Ready to begin implementation of [spec-title]!
 
-Use the following list of prompts to direct the implementation of each task group:
-
+Prompt files created:
 [list prompt files in order]
 
-Input those prompts into this chat one-by-one or queue them to run in order.
+How to use:
+1. Open each prompt file in order
+2. Copy the content into your AI assistant
+3. After each task group, update orchestration.yml status
 
-Progress will be tracked in `agent-os/specs/[this-spec]/tasks.md`
+Progress tracking:
+- Tasks: agent-os/specs/[spec-path]/tasks.md
+- Orchestration: agent-os/specs/[spec-path]/orchestration.yml
+
+When all task groups are complete, run `/review-code` followed by `/implement-tasks` for verification.
 ```
 {{ENDUNLESS use_claude_code_subagents}}
+
+## Error Recovery
+
+If any phase fails, follow the error recovery workflow for detailed guidance:
+
+{{workflows/implementation/error-recovery}}
+
+**Quick reference:**
+
+1. **Task Group Failure**: Log to errors.log, update orchestration.yml status, ask user for action
+2. **Agent Unavailable**: Fall back to default `implementer` agent
+3. **Standards Not Found**: Proceed with `global/*` standards, warn user
+4. **Partial Completion**: Can resume from last pending task group using orchestration.yml state
+5. **Code Review Rejection**: Fix critical issues before proceeding to next task group
+6. **Test Failures**: Run error recovery workflow Category 1, then retry verification

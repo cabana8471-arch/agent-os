@@ -60,3 +60,18 @@ IMPORTANT: Ensure the product mission and roadmap are ALIGNED and DO NOT CONFLIC
 
 {{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
+
+## Output Protocol
+
+Follow the output protocol for context optimization:
+
+{{protocols/output-protocol}}
+
+## Error Recovery
+
+If you encounter issues during product planning:
+
+1. **Incomplete User Input**: Ask clarifying questions, don't assume missing details
+2. **Conflicting Requirements**: Document conflicts and ask user to prioritize
+3. **File Write Errors**: Verify directory exists, create if needed, retry operation
+4. **Unclear Tech Stack**: Research common stacks for the product type, present options to user

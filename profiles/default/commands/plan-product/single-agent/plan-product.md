@@ -9,10 +9,10 @@ Carefully read and execute the instructions in the following files IN SEQUENCE, 
 
 Instructions to follow in sequence:
 
-{{PHASE 1: @agent-os/commands/plan-product/1-product-concept.md}}
+{{PHASE 1: @agent-os/commands/plan-product/single-agent/1-product-concept.md}}
 
-{{PHASE 2: @agent-os/commands/plan-product/2-create-mission.md}}
+{{PHASE 2: @agent-os/commands/plan-product/single-agent/2-create-mission.md}}
 
-{{PHASE 3: @agent-os/commands/plan-product/3-create-roadmap.md}}
+{{PHASE 3: @agent-os/commands/plan-product/single-agent/3-create-roadmap.md}}
 
-{{PHASE 4: @agent-os/commands/plan-product/4-create-tech-stack.md}}
+{{PHASE 4: @agent-os/commands/plan-product/single-agent/4-create-tech-stack.md}}

@@ -1,5 +1,7 @@
 ## Database model best practices
 
+> **Related Standards**: See `validation.md` for layered validation patterns, `queries.md` for index and performance considerations, `migrations.md` for schema change practices.
+
 - **Clear Naming**: Use singular names for models and plural for tables following your framework's conventions
 - **Timestamps**: Include created and updated timestamps on all tables for auditing and debugging
 - **Data Integrity**: Use database constraints (NOT NULL, UNIQUE, foreign keys) to enforce data rules at the database level

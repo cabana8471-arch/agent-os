@@ -5,7 +5,13 @@
 # Creates a new profile for Agent OS
 # =============================================================================
 
-set -e  # Exit on error
+set -euo pipefail  # Exit on error, undefined vars, and pipe failures
+
+# Validate HOME is set before proceeding
+if [[ -z "${HOME:-}" ]]; then
+    echo "Error: HOME environment variable is not set" >&2
+    exit 1
+fi
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -22,6 +28,8 @@ source "$SCRIPT_DIR/common-functions.sh"
 PROFILE_NAME=""
 INHERIT_FROM=""
 COPY_FROM=""
+DRY_RUN="false"
+VERBOSE="false"
 
 # -----------------------------------------------------------------------------
 # Validation Functions
@@ -35,6 +43,54 @@ validate_installation() {
         print_error "Profiles directory not found at $PROFILES_DIR"
         exit 1
     fi
+}
+
+# Validate that a profile name doesn't contain path traversal attempts
+# Returns 0 if valid, 1 if invalid
+validate_profile_name() {
+    local name=$1
+
+    # Check for empty name
+    if [[ -z "$name" ]]; then
+        print_error "Profile name cannot be empty"
+        return 1
+    fi
+
+    # Check for path traversal attempts
+    if [[ "$name" == *".."* ]] || [[ "$name" == *"/"* ]] || [[ "$name" == *"\\"* ]]; then
+        print_error "Profile name contains invalid characters (path traversal attempt detected)"
+        return 1
+    fi
+
+    # Check that resolved path stays within profiles directory
+    local resolved_path
+    resolved_path=$(cd "$PROFILES_DIR" 2>/dev/null && mkdir -p "$name" 2>/dev/null && cd "$name" && pwd)
+    if [[ $? -ne 0 ]] || [[ "$resolved_path" != "$PROFILES_DIR/$name" ]]; then
+        # Clean up if directory was created during check
+        rmdir "$PROFILES_DIR/$name" 2>/dev/null || true
+        print_error "Profile name resolves to invalid path"
+        return 1
+    fi
+    # Clean up the directory we created for validation
+    rmdir "$resolved_path" 2>/dev/null || true
+
+    return 0
+}
+
+# Validate that a profile exists in the profiles directory
+validate_profile_exists() {
+    local profile=$1
+
+    if [[ -z "$profile" ]]; then
+        return 1
+    fi
+
+    if [[ ! -d "$PROFILES_DIR/$profile" ]]; then
+        print_error "Profile '$profile' does not exist"
+        return 1
+    fi
+
+    return 0
 }
 
 # -----------------------------------------------------------------------------
@@ -74,14 +130,8 @@ get_profile_name() {
         # Normalize the name
         PROFILE_NAME=$(normalize_name "$profile_input")
 
-        if [[ -z "$PROFILE_NAME" ]]; then
-            print_error "Profile name cannot be empty"
-            continue
-        fi
-
-        # Security: Check for path traversal attempts
-        if [[ "$PROFILE_NAME" == *".."* ]] || [[ "$PROFILE_NAME" == *"/"* ]]; then
-            print_error "Invalid profile name: path traversal not allowed"
+        # Validate the profile name (includes path traversal check)
+        if ! validate_profile_name "$PROFILE_NAME"; then
             continue
         fi
 
@@ -140,18 +190,31 @@ select_inheritance() {
         done
 
         echo ""
-        read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
 
-        if [[ "$selection" == "1" ]]; then
-            INHERIT_FROM=""
-            print_status "Profile will not inherit from any profile"
-        elif [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 2 ]] && [[ "$selection" -le $((${#profiles[@]}+1)) ]]; then
-            INHERIT_FROM="${profiles[$((selection-2))]}"
-            print_success "Profile will inherit from: $INHERIT_FROM"
-        else
-            print_error "Invalid selection"
-            exit 1
-        fi
+        # Retry loop for invalid input
+        local max_attempts=3
+        local attempt=0
+        while [[ $attempt -lt $max_attempts ]]; do
+            read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
+
+            if [[ "$selection" == "1" ]]; then
+                INHERIT_FROM=""
+                print_status "Profile will not inherit from any profile"
+                break
+            elif [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 2 ]] && [[ "$selection" -le $((${#profiles[@]}+1)) ]]; then
+                INHERIT_FROM="${profiles[$((selection-2))]}"
+                print_success "Profile will inherit from: $INHERIT_FROM"
+                break
+            else
+                ((attempt++)) || true
+                if [[ $attempt -lt $max_attempts ]]; then
+                    print_warning "Invalid selection. Please enter a number between 1 and $((${#profiles[@]}+1)). (Attempt $attempt of $max_attempts)"
+                else
+                    print_error "Too many invalid attempts. Exiting."
+                    exit 1
+                fi
+            fi
+        done
     fi
 }
 
@@ -204,26 +267,82 @@ select_copy_source() {
         done
 
         echo ""
-        read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
 
-        if [[ "$selection" == "1" ]]; then
-            COPY_FROM=""
-            print_status "Will create empty profile structure"
-        elif [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 2 ]] && [[ "$selection" -le $((${#profiles[@]}+1)) ]]; then
-            # Array bounds check before accessing
-            local profile_index=$((selection-2))
-            if [[ $profile_index -ge 0 ]] && [[ $profile_index -lt ${#profiles[@]} ]]; then
-                COPY_FROM="${profiles[$profile_index]}"
+        # Retry loop for invalid input
+        local max_attempts=3
+        local attempt=0
+        while [[ $attempt -lt $max_attempts ]]; do
+            read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
+
+            if [[ "$selection" == "1" ]]; then
+                COPY_FROM=""
+                print_status "Will create empty profile structure"
+                break
+            elif [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 2 ]] && [[ "$selection" -le $((${#profiles[@]}+1)) ]]; then
+                COPY_FROM="${profiles[$((selection-2))]}"
                 print_success "Will copy contents from: $COPY_FROM"
+                break
             else
-                print_error "Profile index out of bounds"
-                exit 1
+                ((attempt++)) || true
+                if [[ $attempt -lt $max_attempts ]]; then
+                    print_warning "Invalid selection. Please enter a number between 1 and $((${#profiles[@]}+1)). (Attempt $attempt of $max_attempts)"
+                else
+                    print_error "Too many invalid attempts. Exiting."
+                    exit 1
+                fi
             fi
-        else
-            print_error "Invalid selection"
-            exit 1
-        fi
+        done
     fi
+}
+
+# -----------------------------------------------------------------------------
+# Help Function
+# -----------------------------------------------------------------------------
+
+show_help() {
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Create a new Agent OS profile interactively.
+
+Options:
+    --dry-run     Preview what would be created without doing it
+    --verbose     Show detailed output
+    -h, --help    Show this help message
+
+Examples:
+    $0
+    $0 --dry-run
+    $0 --verbose
+
+EOF
+    exit 0
+}
+
+# -----------------------------------------------------------------------------
+# Parse Command Line Arguments
+# -----------------------------------------------------------------------------
+
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dry-run)
+                DRY_RUN="true"
+                shift
+                ;;
+            --verbose)
+                VERBOSE="true"
+                shift
+                ;;
+            -h|--help)
+                show_help
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_help
+                ;;
+        esac
+    done
 }
 
 # -----------------------------------------------------------------------------
@@ -233,36 +352,62 @@ select_copy_source() {
 create_profile_structure() {
     local profile_path="$PROFILES_DIR/$PROFILE_NAME"
 
-    print_status "Creating profile structure..."
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_status "[DRY RUN] Would create profile structure..."
+    else
+        print_status "Creating profile structure..."
+    fi
 
     if [[ -n "$COPY_FROM" ]]; then
-        # Copy from existing profile
-        print_status "Copying from profile: $COPY_FROM"
-        cp -r "$PROFILES_DIR/$COPY_FROM" "$profile_path"
+        # Validate that the source profile exists before copying
+        if ! validate_profile_exists "$COPY_FROM"; then
+            print_error "Cannot copy from non-existent profile: $COPY_FROM"
+            exit 1
+        fi
 
-        # Update profile-config.yml
-        cat > "$profile_path/profile-config.yml" << EOF
+        if [[ "$DRY_RUN" == "true" ]]; then
+            print_status "[DRY RUN] Would copy from profile: $COPY_FROM"
+            print_status "[DRY RUN] Would create: $profile_path/"
+            print_status "[DRY RUN] Would create: $profile_path/profile-config.yml"
+            print_success "[DRY RUN] Profile would be copied and configured"
+        else
+            # Copy from existing profile
+            print_status "Copying from profile: $COPY_FROM"
+            cp -rp "$PROFILES_DIR/$COPY_FROM" "$profile_path"
+
+            # Update profile-config.yml
+            cat > "$profile_path/profile-config.yml" << EOF
 inherits_from: false
 
 # Profile configuration for $PROFILE_NAME
 # Copied from: $COPY_FROM
 EOF
 
-        print_success "Profile copied and configured"
+            print_success "Profile copied and configured"
+        fi
 
     else
-        # Create new structure
-        mkdir -p "$profile_path"
+        if [[ "$DRY_RUN" == "true" ]]; then
+            print_status "[DRY RUN] Would create: $profile_path/"
+            print_status "[DRY RUN] Would create: $profile_path/standards/"
+            print_status "[DRY RUN] Would create: $profile_path/workflows/implementation/"
+            print_status "[DRY RUN] Would create: $profile_path/workflows/planning/"
+            print_status "[DRY RUN] Would create: $profile_path/workflows/specification/"
+            print_status "[DRY RUN] Would create: $profile_path/profile-config.yml"
+            print_success "[DRY RUN] Profile structure would be created"
+        else
+            # Create new structure
+            mkdir -p "$profile_path"
 
-        # Create standard directories
-        mkdir -p "$profile_path/standards/"
-        mkdir -p "$profile_path/workflows/implementation"
-        mkdir -p "$profile_path/workflows/planning"
-        mkdir -p "$profile_path/workflows/specification"
+            # Create standard directories
+            mkdir -p "$profile_path/standards/"
+            mkdir -p "$profile_path/workflows/implementation"
+            mkdir -p "$profile_path/workflows/planning"
+            mkdir -p "$profile_path/workflows/specification"
 
-        # Create profile-config.yml
-        if [[ -n "$INHERIT_FROM" ]]; then
-            cat > "$profile_path/profile-config.yml" << EOF
+            # Create profile-config.yml
+            if [[ -n "$INHERIT_FROM" ]]; then
+                cat > "$profile_path/profile-config.yml" << EOF
 inherits_from: $INHERIT_FROM
 
 # Uncomment and modify to exclude specific inherited files:
@@ -271,15 +416,16 @@ inherits_from: $INHERIT_FROM
 #   - standards/backend/database/migrations.md
 #   - workflows/implementation/specific-workflow.md
 EOF
-        else
-            cat > "$profile_path/profile-config.yml" << EOF
+            else
+                cat > "$profile_path/profile-config.yml" << EOF
 inherits_from: false
 
 # Profile configuration for $PROFILE_NAME
 EOF
-        fi
+            fi
 
-        print_success "Profile structure created"
+            print_success "Profile structure created"
+        fi
     fi
 }
 
@@ -288,9 +434,15 @@ EOF
 # -----------------------------------------------------------------------------
 
 main() {
+    # Parse command line arguments
+    parse_arguments "$@"
+
     clear
     echo ""
     echo -e "${BLUE}=== Agent OS - Create Profile Utility ===${NC}"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo -e "${YELLOW}(DRY RUN MODE - No files will be created)${NC}"
+    fi
     echo ""
 
     # Validate installation
@@ -312,7 +464,11 @@ main() {
     echo ""
     echo -e "${GREEN}════════════════════════════════════════════${NC}"
     echo ""
-    print_success "Profile '$PROFILE_NAME' has been successfully created!"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_success "[DRY RUN] Profile '$PROFILE_NAME' would be created!"
+    else
+        print_success "Profile '$PROFILE_NAME' has been successfully created!"
+    fi
     echo ""
     print_status "Location: $PROFILES_DIR/$PROFILE_NAME"
 

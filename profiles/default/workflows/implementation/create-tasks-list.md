@@ -1,5 +1,11 @@
 # Task List Creation
 
+## Pre-conditions
+
+- [ ] Spec exists at `agent-os/specs/[spec-path]/spec.md`
+- [ ] Requirements documented at `agent-os/specs/[spec-path]/planning/requirements.md` (optional but recommended)
+- [ ] Spec has been verified (recommended: run `/verify-spec` before creating tasks)
+
 ## Core Responsibilities
 
 1. **Analyze spec and requirements**: Read and analyze the spec.md and/or requirements.md to inform the tasks list you will create.
@@ -12,15 +18,15 @@
 ### Step 1: Analyze Spec & Requirements
 
 Read each of these files (whichever are available) and analyze them to understand the requirements for this feature implementation:
-- `agent-os/specs/[this-spec]/spec.md`
-- `agent-os/specs/[this-spec]/planning/requirements.md`
+- `agent-os/specs/[spec-path]/spec.md`
+- `agent-os/specs/[spec-path]/planning/requirements.md`
 
 Use your learnings to inform the tasks list and groupings you will create in the next step.
 
 
 ### Step 2: Create Tasks Breakdown
 
-Generate `agent-os/specs/[current-spec]/tasks.md`.
+Generate `agent-os/specs/[spec-path]/tasks.md`.
 
 **Important**: The exact tasks, task groups, and organization will vary based on the feature's specific requirements. The following is an example format - adapt the content of the tasks list to match what THIS feature actually needs.
 
@@ -185,6 +191,21 @@ Recommended implementation sequence:
 - Different execution order based on dependencies
 - More or fewer sub-tasks per group
 
+## Output Summary
+
+> **Follow Output Protocol**: See `{{protocols/output-protocol}}` for context optimization guidelines.
+
+After creating the tasks list, return ONLY this summary:
+
+```
+✅ Task list created.
+📁 Report: agent-os/specs/[spec-path]/tasks.md
+📊 Summary: [X] task groups | [Y] total tasks | Est. tests: ~[Z]
+⏱️ Next: Ready for implementation
+```
+
+**Do NOT include** detailed task lists, acceptance criteria, or execution order in the conversation response.
+
 ## Important Constraints
 
 - **Create tasks that are specific and verifiable**
@@ -197,3 +218,13 @@ Recommended implementation sequence:
 - **Use a focused test-driven approach** where each task group starts with writing 2-8 tests (x.1 sub-task) and ends with running ONLY those tests (final sub-task)
 - **Include acceptance criteria** for each task group
 - **Reference visual assets** if visuals are available
+
+## Error Recovery
+
+If task creation encounters issues:
+1. **Missing spec.md:** Run `/write-spec` to create the specification first
+2. **Vague or incomplete spec:** Recommend running `/verify-spec` and `/update-spec` before proceeding
+3. **Cannot determine task dependencies:** Make conservative assumptions and document them in task notes
+4. **Unclear technology stack:** Reference `agent-os/product/tech-stack.md` for guidance
+
+For other errors, refer to `{{workflows/implementation/error-recovery}}`

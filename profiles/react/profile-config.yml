@@ -1,0 +1,19 @@
+inherits_from: default
+
+# React profile overrides: exclude generic backend standards
+exclude_inherited_files:
+  # Override these with React-specific versions:
+  - standards/frontend/components.md
+  - standards/frontend/css.md
+  - standards/frontend/accessibility.md
+  - standards/testing/test-writing.md
+  - standards/global/tech-stack.md
+  - standards/global/coding-style.md
+  - standards/global/validation.md
+  - standards/global/error-handling.md
+  - standards/backend/api.md
+
+  # Exclude irrelevant backend standards (React is frontend-only):
+  - standards/backend/models.md
+  - standards/backend/migrations.md
+  - standards/backend/queries.md

@@ -1,5 +1,11 @@
 # Spec Research
 
+## Pre-conditions
+
+- [ ] Spec folder initialized at `[spec-path]/`
+- [ ] `[spec-path]/planning/initialization.md` exists with raw feature description
+- [ ] Product documentation exists: `agent-os/product/mission.md`, `roadmap.md`, `tech-stack.md`
+
 ## Core Responsibilities
 
 1. **Read Initial Idea**: Load the raw idea from initialization.md
@@ -233,20 +239,18 @@ No visual assets provided.
 
 ### Step 7: Output Completion
 
-Return to orchestrator:
+> **Follow Output Protocol**: See `{{protocols/output-protocol}}` for context optimization guidelines.
+
+Return ONLY this summary:
 
 ```
-Requirements research complete!
-
-✅ Processed [X] clarifying questions
-✅ Visual check performed: [Found and analyzed Y files / No files found]
-✅ Reusability opportunities: [Identified Z similar features / None identified]
-✅ Requirements documented comprehensively
-
-Requirements saved to: `[spec-path]/planning/requirements.md`
-
-Ready for specification creation.
+✅ Requirements research complete.
+📁 Report: [spec-path]/planning/requirements.md
+📊 Summary: [X] questions | [Y] visuals | [Z] reuse opportunities
+⏱️ Next: Ready for specification creation
 ```
+
+**Do NOT include** detailed Q&A content, visual analysis, or reusability details in the conversation response.
 
 ## Important Constraints
 
@@ -260,3 +264,13 @@ Ready for specification creation.
 - Document all visual findings including fidelity level
 - Document paths to similar features for spec-writer to reference
 - OUTPUT questions and STOP to wait for orchestrator to relay responses
+
+## Error Recovery
+
+If research encounters issues:
+1. **Missing initialization.md:** Run `/shape-spec` to initialize the spec first
+2. **Missing product documentation:** Run `/plan-product` to create mission, roadmap, and tech-stack
+3. **User unresponsive to questions:** Wait for orchestrator to relay response; do not proceed without answers
+4. **Visual folder permission error:** Log warning and continue without visual analysis
+
+For other errors, refer to `{{workflows/implementation/error-recovery}}`
