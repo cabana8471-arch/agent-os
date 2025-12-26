@@ -133,6 +133,9 @@ new_feature:
 
 ### Step 6: Create Documentation Summary
 
+> **Quality Gate**: Before finalizing documentation, verify completeness using the verification checklist.
+> See `{{protocols/verification-checklist}}` for quality gate guidelines.
+
 Write summary to `agent-os/specs/[spec-path]/implementation/documentation-summary.md`:
 
 ```markdown

@@ -1,3 +1,5 @@
+> **Related Standards**: See `global/conventions.md` for development conventions, `global/security.md` for security requirements, `testing/test-writing.md` for testing setup.
+
 ## Tech stack
 
 Define your technical stack below. This serves as a reference for all team members and helps maintain consistency across the project.

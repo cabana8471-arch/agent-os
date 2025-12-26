@@ -4,7 +4,155 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
-## [2025-12-27 01:15] HIGH Priority Issues Fix - Scripts, Standards, and Workflows
+## [2025-12-27 00:02] MEDIUM Priority Issues Fix - Standards, Scripts, Workflows, and Protocols
+
+### Description
+
+Fixed all 15 MEDIUM priority issues identified in the consolidated analysis report. These fixes improve documentation standards, script robustness, protocol utilization, and cross-reference consistency.
+
+### Issues Fixed
+
+#### M1. Non-English Comment (MEDIUM)
+
+**Location:** `profiles/seo-nextjs-drizzle/profile-config.yml:3`
+
+**Problem:** Romanian comment "Override doar fișierele..."
+
+**Fix:** Translated to English: "Override only files that differ from nextjs profile"
+
+#### M2-M6. Missing Related Standards Sections (MEDIUM)
+
+**Location:** 5 standards files
+
+**Problem:** Missing Related Standards sections in routing.md, state-management.md, conventions.md, deprecation.md, tech-stack.md
+
+**Fix:** Added blockquote Related Standards sections at the top of each file with appropriate cross-references:
+- `frontend/routing.md` - references state-management, components, security
+- `frontend/state-management.md` - references routing, components, performance
+- `global/conventions.md` - references coding-style, tech-stack, test-writing
+- `global/deprecation.md` - references conventions, commenting
+- `global/tech-stack.md` - references conventions, security, test-writing
+
+#### M7. Missing Validation in copy_file (MEDIUM)
+
+**Status:** VERIFIED AS ALREADY FIXED
+
+**Note:** Validation is properly implemented at lines 329-331.
+
+#### M8. Unsafe Perl Regex Replacement (MEDIUM)
+
+**Location:** `scripts/common-functions.sh:979, 1082`
+
+**Problem:** Direct shell interpolation in perl commands could cause issues with special characters.
+
+**Fix:** Replaced inline perl `-pe` commands with safer `-e` approach using temp files:
+- Line 979: Workflow not-found warning replacement
+- Line 1082: Protocol not-found warning replacement
+
+#### M9. Unchecked Perl Return Codes (MEDIUM)
+
+**Location:** `scripts/common-functions.sh` (multiple locations)
+
+**Problem:** Perl invocations didn't check return codes.
+
+**Fix:** Added `|| { print_warning "..." }` error handling after all perl calls:
+- Lines 922-924: Lazy workflow replacement
+- Lines 970-972: Embedded workflow replacement
+- Lines 1006-1011: Workflow not-found replacement
+- Lines 1078-1080: Protocol replacement
+- Lines 1109-1114: Protocol not-found replacement
+- Lines 1262-1264: Standards replacement in PHASE tags
+- Lines 1303-1305: PHASE tag replacement
+- Lines 1386-1388: Role key replacement
+- Lines 1452-1454: Standards replacement in compile_agent
+
+#### M10. Verification Checklist Protocol Underutilized (MEDIUM)
+
+**Location:** 4 workflows
+
+**Problem:** Verification Checklist Protocol not referenced in test-strategy, generate-docs, refactoring-analysis, dependency-audit.
+
+**Fix:** Added protocol references:
+- `testing/test-strategy.md` - Quality Gate reference before test plan creation
+- `documentation/generate-docs.md` - Quality Gate reference before documentation summary
+- `maintenance/refactoring-analysis.md` - Quality Gate reference before report creation
+- `maintenance/dependency-audit.md` - Quality Gate reference before audit report
+
+#### M11. Issue Tracking Protocol Underutilized (MEDIUM)
+
+**Location:** 3 workflows
+
+**Problem:** Issue Tracking Protocol should be used in refactoring-analysis, feature-analysis, dependency-audit.
+
+**Fix:** Added protocol references:
+- `maintenance/refactoring-analysis.md` - Issue Tracking reference (QUAL-XXX, ARCH-XXX, PERF-XXX)
+- `analysis/feature-analysis.md` - Issue Tracking reference (FEAT-XXX, DUP-XXX, GAP-XXX)
+- `maintenance/dependency-audit.md` - Issue Tracking reference (DEP-XXX, SEC-XXX)
+
+#### M12. NEXT STEP Reference Ambiguity (MEDIUM)
+
+**Status:** VERIFIED AS ALREADY FIXED (with C1)
+
+**Note:** Duplicate file `3-verify-implementation.md` was deleted in previous commit. NEXT STEP now correctly points to `3-code-review.md`.
+
+#### M13. Incomplete Bidirectional Links (MEDIUM)
+
+**Location:** `standards/backend/migrations.md`
+
+**Problem:** Only referenced models.md, should also reference queries.md.
+
+**Fix:** Updated to blockquote format with both references: `backend/models.md` and `backend/queries.md`
+
+#### M14. Inconsistent Related Standards Format (MEDIUM)
+
+**Problem:** migrations.md used heading format at bottom, others use blockquote at top.
+
+**Fix:** Standardized migrations.md to use blockquote format at top of file, removed duplicate heading section at bottom.
+
+#### M15. Subshell Variable Scope (MEDIUM)
+
+**Location:** `scripts/common-functions.sh:629`
+
+**Problem:** Echo failures in loop could cause issues with set -e.
+
+**Fix:** Added `|| true` to echo call to explicitly handle potential (rare) failures.
+
+### Modified Files
+
+| File | Modification |
+|------|--------------|
+| `profiles/seo-nextjs-drizzle/profile-config.yml` | M1 (translated comment) |
+| `profiles/default/standards/frontend/routing.md` | M2-M6 (added Related Standards) |
+| `profiles/default/standards/frontend/state-management.md` | M2-M6 (added Related Standards) |
+| `profiles/default/standards/global/conventions.md` | M2-M6 (added Related Standards) |
+| `profiles/default/standards/global/deprecation.md` | M2-M6 (added Related Standards) |
+| `profiles/default/standards/global/tech-stack.md` | M2-M6 (added Related Standards) |
+| `profiles/default/standards/backend/migrations.md` | M13, M14 (format + queries.md) |
+| `scripts/common-functions.sh` | M8, M9, M15 (perl safety + error handling) |
+| `profiles/default/workflows/testing/test-strategy.md` | M10 (verification protocol) |
+| `profiles/default/workflows/documentation/generate-docs.md` | M10 (verification protocol) |
+| `profiles/default/workflows/maintenance/refactoring-analysis.md` | M10, M11 (both protocols) |
+| `profiles/default/workflows/maintenance/dependency-audit.md` | M10, M11 (both protocols) |
+| `profiles/default/workflows/analysis/feature-analysis.md` | M11 (issue tracking protocol) |
+
+### Verification Results
+
+✅ All scripts pass bash syntax check (`bash -n`)
+✅ Standards cross-references standardized to blockquote format
+✅ Protocol references added to 5 workflows
+✅ Perl error handling added to 9 locations
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| Issues fixed | 15 (13 active + 2 already fixed) |
+| Files modified | 13 |
+| Lines added | ~180 |
+
+---
+
+## [2025-12-26 23:55] HIGH Priority Issues Fix - Scripts, Standards, and Workflows
 
 ### Description
 

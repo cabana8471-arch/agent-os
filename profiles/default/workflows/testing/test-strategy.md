@@ -79,6 +79,9 @@ Create a balanced testing approach:
 
 ### Step 5: Create Test Plan
 
+> **Quality Gate**: Before finalizing the test plan, verify using the Test Strategy Verification Checklist.
+> See `{{protocols/verification-checklist}}` for the relevant checklist.
+
 Write detailed test plan to `agent-os/specs/[spec-path]/implementation/test-plan.md`:
 
 ```markdown

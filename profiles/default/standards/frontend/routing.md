@@ -1,3 +1,5 @@
+> **Related Standards**: See `frontend/state-management.md` for URL state syncing, `frontend/components.md` for navigation components, `global/security.md` for authentication routes.
+
 ## Routing Best Practices
 
 ### URL Design

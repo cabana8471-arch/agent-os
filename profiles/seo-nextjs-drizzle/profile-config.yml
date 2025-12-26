@@ -1,6 +1,6 @@
 inherits_from: nextjs
 
-# Override doar fișierele care diferă de nextjs profile
+# Override only files that differ from nextjs profile
 exclude_inherited_files:
   # Global overrides
   - standards/global/tech-stack.md

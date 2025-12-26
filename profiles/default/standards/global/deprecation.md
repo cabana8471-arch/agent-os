@@ -1,3 +1,5 @@
+> **Related Standards**: See `global/conventions.md` for versioning practices, `global/commenting.md` for deprecation notices in code.
+
 ## Standard Deprecation Process
 
 This document defines the process for deprecating standards, patterns, or technologies in the project.

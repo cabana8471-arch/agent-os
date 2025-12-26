@@ -102,6 +102,12 @@ For each issue found, provide:
 
 ### Step 6: Create Refactoring Report
 
+> **Issue Tracking**: Use issue tracking IDs for all findings (QUAL-XXX, ARCH-XXX, PERF-XXX).
+> See `{{protocols/issue-tracking}}` for ID format and severity guidelines.
+
+> **Quality Gate**: Verify analysis completeness before finalizing report.
+> See `{{protocols/verification-checklist}}` for quality gate guidelines.
+
 Write to `agent-os/specs/[spec-path]/implementation/refactoring-analysis.md` or `agent-os/reports/refactoring-analysis-[date].md`:
 
 ```markdown

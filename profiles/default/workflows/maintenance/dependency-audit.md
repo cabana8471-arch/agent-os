@@ -106,6 +106,12 @@ npx license-checker --summary 2>/dev/null || echo "license-checker not available
 
 ### Step 7: Create Audit Report
 
+> **Issue Tracking**: Use issue tracking IDs for vulnerabilities (DEP-XXX for dependency issues, SEC-XXX for security findings).
+> See `{{protocols/issue-tracking}}` for ID format and severity guidelines.
+
+> **Quality Gate**: Verify all dependencies checked before finalizing report.
+> See `{{protocols/verification-checklist}}` for quality gate guidelines.
+
 Write report to `agent-os/specs/[spec-path]/implementation/dependency-audit.md` (or root if no active spec):
 
 ```markdown

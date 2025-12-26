@@ -1,3 +1,5 @@
+> **Related Standards**: See `global/coding-style.md` for code formatting, `global/tech-stack.md` for technology choices, `testing/test-writing.md` for testing requirements.
+
 ## General development conventions
 
 - **Consistent Project Structure**: Organize files and directories in a predictable, logical structure that team members can navigate easily

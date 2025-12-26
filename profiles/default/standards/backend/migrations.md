@@ -1,3 +1,5 @@
+> **Related Standards**: See `backend/models.md` for schema design, `backend/queries.md` for query optimization after schema changes.
+
 ## Database migration best practices
 
 - **Reversible Migrations**: Always implement rollback/down methods to enable safe migration reversals
@@ -8,5 +10,3 @@
 - **Naming Conventions**: Use clear, descriptive names that indicate what the migration does
 - **Version Control**: Always commit migrations to version control and never modify existing migrations after deployment
 
-## Related Standards
-- `backend/models.md` - Schema design and constraints

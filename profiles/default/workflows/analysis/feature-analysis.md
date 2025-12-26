@@ -193,6 +193,9 @@ Based on patterns found, propose features that:
 
 ### Step 7: Create Feature Analysis Report
 
+> **Issue Tracking**: Use issue tracking IDs for findings (FEAT-XXX for proposals, DUP-XXX for duplicates, GAP-XXX for gaps).
+> See `{{protocols/issue-tracking}}` for ID format and severity guidelines.
+
 Write to `agent-os/reports/feature-analysis-[date].md` or `agent-os/specs/[spec-path]/planning/feature-analysis.md`:
 
 ```markdown

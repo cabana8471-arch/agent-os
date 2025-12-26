@@ -626,7 +626,8 @@ get_profile_files() {
                     # Check if already in list (override scenario)
                     if [[ ! " $all_files " == *" $relative_path "* ]]; then
                         all_files="$all_files $relative_path"
-                        echo "$relative_path"
+                        # Output file path; ignore echo failures (extremely rare)
+                        echo "$relative_path" || true
                     fi
                 fi
             done < <(find "$search_dir" -type f \( -name "*.md" -o -name "*.yml" -o -name "*.yaml" \) 2>/dev/null)
@@ -919,7 +920,9 @@ process_workflows() {
                     $content =~ s/$escaped_pattern/$replacement/g;
 
                     print $content;
-                ' "$workflow_ref" "$temp_ref" "$temp_content")
+                ' "$workflow_ref" "$temp_ref" "$temp_content") || {
+                    print_warning "Perl replacement failed for lazy workflow: $workflow_ref"
+                }
                 remove_temp_file "$temp_content"
                 remove_temp_file "$temp_ref"
             else
@@ -965,7 +968,9 @@ process_workflows() {
                     $content =~ s/$pattern/$replacement/g;
 
                     print $content;
-                ' "$workflow_ref" "$temp_replacement" "$temp_content")
+                ' "$workflow_ref" "$temp_replacement" "$temp_content") || {
+                    print_warning "Perl replacement failed for workflow: $workflow_ref"
+                }
 
                 remove_temp_file "$temp_content"
                 remove_temp_file "$temp_replacement"
@@ -974,10 +979,43 @@ process_workflows() {
             # Instead of printing warning to stderr, insert it into the content
             local warning_msg="⚠️ This workflow file was not found in your Agent OS base installation at ~/agent-os/profiles/$profile/workflows/${workflow_path}.md"
             # Use perl for safer replacement with special characters
+            # Use temp files to avoid shell interpolation issues
             local temp_content=$(create_temp_file)
+            local temp_replacement=$(create_temp_file)
             echo "$content" > "$temp_content"
-            content=$(perl -pe "s|\Q$workflow_ref\E|$workflow_ref\n$warning_msg|g" "$temp_content")
+            printf '%s\n%s' "$workflow_ref" "$warning_msg" > "$temp_replacement"
+            content=$(perl -e '
+                use strict;
+                use warnings;
+
+                my $ref = $ARGV[0];
+                my $replacement_file = $ARGV[1];
+                my $content_file = $ARGV[2];
+
+                # Read replacement content
+                open(my $fh, "<", $replacement_file) or die "Cannot open replacement file: $!";
+                my $replacement = do { local $/; <$fh> };
+                close($fh);
+                chomp $replacement;
+
+                # Read main content
+                open($fh, "<", $content_file) or die "Cannot open content file: $!";
+                my $content = do { local $/; <$fh> };
+                close($fh);
+
+                # Do the replacement - use quotemeta to escape special chars
+                my $pattern = quotemeta($ref);
+                $content =~ s/$pattern/$replacement/g;
+
+                print $content;
+            ' "$workflow_ref" "$temp_replacement" "$temp_content") || {
+                print_warning "Perl replacement failed for workflow: $workflow_ref"
+                remove_temp_file "$temp_content"
+                remove_temp_file "$temp_replacement"
+                continue
+            }
             remove_temp_file "$temp_content"
+            remove_temp_file "$temp_replacement"
         fi
     done <<< "$workflow_refs"
 
@@ -1038,16 +1076,51 @@ process_protocols() {
                 $content =~ s/$escaped_pattern/$replacement/g;
 
                 print $content;
-            ' "$protocol_ref" "$temp_ref" "$temp_content")
+            ' "$protocol_ref" "$temp_ref" "$temp_content") || {
+                print_warning "Perl replacement failed for protocol: $protocol_ref"
+            }
             remove_temp_file "$temp_content"
             remove_temp_file "$temp_ref"
         else
             # Protocol not found - insert warning
             local warning_msg="⚠️ This protocol file was not found: ~/agent-os/profiles/$profile/protocols/${protocol_path}.md"
+            # Use temp files to avoid shell interpolation issues
             local temp_content=$(create_temp_file)
+            local temp_replacement=$(create_temp_file)
             echo "$content" > "$temp_content"
-            content=$(perl -pe "s|\Q$protocol_ref\E|$protocol_ref\n$warning_msg|g" "$temp_content")
+            printf '%s\n%s' "$protocol_ref" "$warning_msg" > "$temp_replacement"
+            content=$(perl -e '
+                use strict;
+                use warnings;
+
+                my $ref = $ARGV[0];
+                my $replacement_file = $ARGV[1];
+                my $content_file = $ARGV[2];
+
+                # Read replacement content
+                open(my $fh, "<", $replacement_file) or die "Cannot open replacement file: $!";
+                my $replacement = do { local $/; <$fh> };
+                close($fh);
+                chomp $replacement;
+
+                # Read main content
+                open($fh, "<", $content_file) or die "Cannot open content file: $!";
+                my $content = do { local $/; <$fh> };
+                close($fh);
+
+                # Do the replacement - use quotemeta to escape special chars
+                my $pattern = quotemeta($ref);
+                $content =~ s/$pattern/$replacement/g;
+
+                print $content;
+            ' "$protocol_ref" "$temp_replacement" "$temp_content") || {
+                print_warning "Perl replacement failed for protocol: $protocol_ref"
+                remove_temp_file "$temp_content"
+                remove_temp_file "$temp_replacement"
+                continue
+            }
             remove_temp_file "$temp_content"
+            remove_temp_file "$temp_replacement"
         fi
     done <<< "$protocol_refs"
 
@@ -1187,7 +1260,9 @@ process_phase_tags() {
                         $content =~ s/$pattern/$standards/g;
 
                         print $content;
-                    ' "$standards_ref" "$temp_standards" "$temp_file_content")
+                    ' "$standards_ref" "$temp_standards" "$temp_file_content") || {
+                        print_warning "Perl replacement failed for standards: $standards_ref"
+                    }
 
                     remove_temp_file "$temp_file_content"
                     remove_temp_file "$temp_standards"
@@ -1226,7 +1301,9 @@ process_phase_tags() {
                     $content =~ s/$pattern/$replacement/g;
 
                     print $content;
-                ' "$phase_ref" "$temp_replacement" "$temp_content")
+                ' "$phase_ref" "$temp_replacement" "$temp_content") || {
+                    print_warning "Perl replacement failed for PHASE tag: $phase_ref"
+                }
 
                 remove_temp_file "$temp_content"
                 remove_temp_file "$temp_replacement"
@@ -1307,7 +1384,9 @@ compile_agent() {
                         $content =~ s/$pattern/$value/g;
 
                         print $content;
-                    ' "$key" "$temp_value" "$temp_content")
+                    ' "$key" "$temp_value" "$temp_content") || {
+                        print_warning "Perl replacement failed for role key: $key"
+                    }
 
                     remove_temp_file "$temp_content"
                     remove_temp_file "$temp_value"
@@ -1371,7 +1450,9 @@ compile_agent() {
             $content =~ s/$pattern/$standards/g;
 
             print $content;
-        ' "$standards_ref" "$temp_standards" "$temp_content")
+        ' "$standards_ref" "$temp_standards" "$temp_content") || {
+            print_warning "Perl replacement failed for standards: $standards_ref"
+        }
 
         remove_temp_file "$temp_content"
         remove_temp_file "$temp_standards"
