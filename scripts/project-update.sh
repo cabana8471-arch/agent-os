@@ -909,6 +909,9 @@ main() {
         PROJECT_AGENT_OS_COMMANDS="$EFFECTIVE_AGENT_OS_COMMANDS"
         PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS="$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS"
 
+        # Re-validate configuration after variable reassignment to prevent invalid config
+        validate_config "$PROJECT_CLAUDE_CODE_COMMANDS" "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" "$PROJECT_AGENT_OS_COMMANDS" "$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$PROJECT_PROFILE" "false"
+
         # Proceed with update
         perform_update
         exit 0

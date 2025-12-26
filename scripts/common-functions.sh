@@ -500,6 +500,7 @@ process_conditionals() {
     local nesting_level=0
     local should_include=true
     local stack_should_include=()
+    local stack_tag_type=()  # Track IF vs UNLESS for validation
 
     while IFS= read -r line; do
         # Check for IF tags
@@ -525,6 +526,7 @@ process_conditionals() {
 
             # Push current should_include onto stack
             stack_should_include+=("$should_include")
+            stack_tag_type+=("IF")
 
             # Update should_include based on parent's state AND current condition
             if [[ "$should_include" == true ]] && [[ "$condition_met" == true ]]; then
@@ -560,6 +562,7 @@ process_conditionals() {
 
             # Push current should_include onto stack
             stack_should_include+=("$should_include")
+            stack_tag_type+=("UNLESS")
 
             # Update should_include based on parent's state AND current condition
             if [[ "$should_include" == true ]] && [[ "$condition_met" == true ]]; then
@@ -574,9 +577,22 @@ process_conditionals() {
 
         # Check for ENDIF tags
         if [[ "$line" =~ \{\{ENDIF[[:space:]]+([a-z_]+)\}\} ]]; then
+            local flag_name="${BASH_REMATCH[1]}"
             ((nesting_level--))
 
-            # Pop should_include from stack
+            # Validate tag matching with bounds checking
+            if [[ ${#stack_tag_type[@]} -gt 0 ]]; then
+                local last_type_index=$((${#stack_tag_type[@]} - 1))
+                local expected_type="${stack_tag_type[$last_type_index]}"
+                if [[ "$expected_type" != "IF" ]]; then
+                    print_warning "Mismatched template tags: {{ENDIF $flag_name}} closes {{UNLESS ...}}"
+                fi
+                unset 'stack_tag_type[$last_type_index]'
+            else
+                print_warning "Orphaned {{ENDIF $flag_name}} tag without matching {{IF ...}}"
+            fi
+
+            # Pop should_include from stack with bounds checking
             if [[ ${#stack_should_include[@]} -gt 0 ]]; then
                 local last_index=$((${#stack_should_include[@]} - 1))
                 should_include="${stack_should_include[$last_index]}"
@@ -590,9 +606,22 @@ process_conditionals() {
 
         # Check for ENDUNLESS tags
         if [[ "$line" =~ \{\{ENDUNLESS[[:space:]]+([a-z_]+)\}\} ]]; then
+            local flag_name="${BASH_REMATCH[1]}"
             ((nesting_level--))
 
-            # Pop should_include from stack
+            # Validate tag matching with bounds checking
+            if [[ ${#stack_tag_type[@]} -gt 0 ]]; then
+                local last_type_index=$((${#stack_tag_type[@]} - 1))
+                local expected_type="${stack_tag_type[$last_type_index]}"
+                if [[ "$expected_type" != "UNLESS" ]]; then
+                    print_warning "Mismatched template tags: {{ENDUNLESS $flag_name}} closes {{IF ...}}"
+                fi
+                unset 'stack_tag_type[$last_type_index]'
+            else
+                print_warning "Orphaned {{ENDUNLESS $flag_name}} tag without matching {{UNLESS ...}}"
+            fi
+
+            # Pop should_include from stack with bounds checking
             if [[ ${#stack_should_include[@]} -gt 0 ]]; then
                 local last_index=$((${#stack_should_include[@]} - 1))
                 should_include="${stack_should_include[$last_index]}"
@@ -629,8 +658,8 @@ process_workflows() {
     local profile=$3
     local processed_files=$4
 
-    # Process each workflow reference
-    local workflow_refs=$(echo "$content" | grep -o '{{workflows/[^}]*}}' | sort -u)
+    # Process each workflow reference (|| true prevents pipefail exit when no matches found)
+    local workflow_refs=$(echo "$content" | grep -o '{{workflows/[^}]*}}' || true | sort -u)
 
     while IFS= read -r workflow_ref; do
         if [[ -z "$workflow_ref" ]]; then
@@ -750,8 +779,8 @@ process_phase_tags() {
         return 0
     fi
 
-    # Find all PHASE tags: {{PHASE X: @agent-os/commands/path/to/file.md}}
-    local phase_refs=$(echo "$content" | grep -o '{{PHASE [^}]*}}' | sort -u)
+    # Find all PHASE tags: {{PHASE X: @agent-os/commands/path/to/file.md}} (|| true prevents pipefail exit)
+    local phase_refs=$(echo "$content" | grep -o '{{PHASE [^}]*}}' || true | sort -u)
 
     if [[ -z "$phase_refs" ]]; then
         echo "$content"
@@ -791,8 +820,8 @@ process_phase_tags() {
                 file_content=$(process_conditionals "$file_content" "${EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS:-true}" "${EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS:-true}" "true")
                 file_content=$(process_workflows "$file_content" "$base_dir" "$profile" "")
 
-                # Process standards replacements in the embedded file
-                local standards_refs=$(echo "$file_content" | grep -o '{{standards/[^}]*}}' | sort -u)
+                # Process standards replacements in the embedded file (|| true prevents pipefail exit)
+                local standards_refs=$(echo "$file_content" | grep -o '{{standards/[^}]*}}' || true | sort -u)
                 while IFS= read -r standards_ref; do
                     if [[ -z "$standards_ref" ]]; then
                         continue
@@ -968,8 +997,8 @@ compile_agent() {
     # Process workflow replacements
     content=$(process_workflows "$content" "$base_dir" "$profile" "")
 
-    # Process standards replacements
-    local standards_refs=$(echo "$content" | grep -o '{{standards/[^}]*}}' | sort -u)
+    # Process standards replacements (|| true prevents pipefail exit when no matches found)
+    local standards_refs=$(echo "$content" | grep -o '{{standards/[^}]*}}' || true | sort -u)
 
     while IFS= read -r standards_ref; do
         if [[ -z "$standards_ref" ]]; then
