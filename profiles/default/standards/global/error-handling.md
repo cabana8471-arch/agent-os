@@ -1,6 +1,6 @@
 ## Error handling best practices
 
-> **Related Standards**: See `logging.md` for structured error logging, `security.md` for safe error messages, `api.md` for HTTP error responses.
+> **Related Standards**: See `global/logging.md` for structured error logging, `global/security.md` for safe error messages, `backend/api.md` for HTTP error responses.
 
 - **User-Friendly Messages**: Provide clear, actionable error messages to users without exposing technical details or security information
 - **Fail Fast and Explicitly**: Validate input and check preconditions early; fail with clear error messages rather than allowing invalid state

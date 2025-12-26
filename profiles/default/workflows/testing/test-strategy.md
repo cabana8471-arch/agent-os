@@ -252,3 +252,5 @@ If you encounter issues during test strategy creation:
 3. **Coverage Tool Unavailable**: Skip coverage analysis step, note in report as "Manual coverage check required"
 4. **Large Codebase**: Focus on specific modules/components, document scope limitations
 5. **Unknown Test Framework**: Recommend framework based on project type, document setup steps needed
+
+For implementation-related errors, refer to `{{workflows/implementation/error-recovery}}`

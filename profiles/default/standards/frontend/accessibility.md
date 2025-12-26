@@ -1,6 +1,6 @@
 ## UI accessibility best practices
 
-> **Related Standards**: See `components.md` for accessible component architecture, `test-writing.md` for accessibility testing with axe-core.
+> **Related Standards**: See `frontend/components.md` for accessible component architecture, `testing/test-writing.md` for accessibility testing with axe-core.
 
 - **Semantic HTML**: Use appropriate HTML elements (nav, main, button, etc.) that convey meaning to assistive technologies
 - **Keyboard Navigation**: Ensure all interactive elements are accessible via keyboard with visible focus indicators

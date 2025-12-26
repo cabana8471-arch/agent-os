@@ -488,6 +488,8 @@ perform_installation() {
     if [[ "$DRY_RUN" == "true" ]]; then
         echo ""
         # Timeout after 60 seconds to prevent hanging in CI/CD environments
+        # Initialize REPLY to avoid unbound variable error with set -u if read times out
+        REPLY=""
         if ! read -t 60 -p "Proceed with actual installation? (y/n): " -n 1 -r; then
             echo
             print_warning "Input timeout - defaulting to 'no'"
@@ -567,6 +569,8 @@ handle_reinstallation() {
     fi
 
     # Timeout after 60 seconds to prevent hanging in CI/CD environments
+    # Initialize REPLY to avoid unbound variable error with set -u if read times out
+    REPLY=""
     if ! read -t 60 -p "Are you sure you want to proceed? (y/n): " -n 1 -r; then
         echo
         print_warning "Input timeout - re-installation cancelled"
@@ -585,6 +589,8 @@ handle_reinstallation() {
             print_error "Failed to create backup directory"
             exit 1
         }
+        # Set up trap immediately after backup creation to ensure cleanup on any failure
+        trap 'rollback_reinstall_from_backup' ERR
         print_verbose "Created backup directory: $_REINSTALL_BACKUP_DIR"
 
         # Backup existing directories before deletion
@@ -619,9 +625,6 @@ handle_reinstallation() {
         fi
 
         print_verbose "Backup created at: $_REINSTALL_BACKUP_DIR"
-
-        # Set up trap for rollback on error
-        trap 'rollback_reinstall_from_backup' ERR
 
         print_status "Removing existing installation..."
         rm -rf "$PROJECT_DIR/agent-os"
@@ -684,7 +687,12 @@ main() {
         else
             # Delegate to update script
             print_status "Agent OS is already installed. Running update..."
-            exec "$BASE_DIR/scripts/project-update.sh" "$@"
+            local update_script="$BASE_DIR/scripts/project-update.sh"
+            if [[ ! -f "$update_script" ]]; then
+                print_error "Update script not found: $update_script"
+                exit 1
+            fi
+            exec "$update_script" "$@"
         fi
     else
         # Fresh installation

@@ -14,5 +14,5 @@ exclude_inherited_files:
   - standards/backend/migrations.md
   - standards/backend/queries.md
 
-  # NOTE: project-structure.md, environment.md, routing.md are Next.js-specific
-  # and don't exist in default profile (no need to exclude them)
+  # NOTE: project-structure.md, environment.md are Next.js-specific and don't exist
+  # in default profile. routing.md exists in default but is overridden with Next.js version.

@@ -1,6 +1,6 @@
 ## Validation best practices
 
-> **Related Standards**: See `security.md` for input sanitization in security context, `api.md` for request validation patterns, `models.md` for database-level validation.
+> **Related Standards**: See `global/security.md` for input sanitization in security context, `backend/api.md` for request validation patterns, `backend/models.md` for database-level validation.
 
 - **Validate on Server Side**: Always validate on the server; never trust client-side validation alone for security or data integrity
 - **Client-Side for UX**: Use client-side validation to provide immediate user feedback, but duplicate checks server-side

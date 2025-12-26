@@ -4,6 +4,125 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-27 01:15] HIGH Priority Issues Fix - Scripts, Standards, and Workflows
+
+### Description
+
+Fixed all 7 HIGH priority issues identified in the consolidated analysis report. These fixes improve script robustness, correct documentation inaccuracies, and ensure consistent error handling across workflows.
+
+### Issues Fixed
+
+#### H1. Uninitialized $REPLY with set -u (HIGH)
+
+**Location:** `scripts/project-install.sh:497, 572`
+
+**Problem:** If `read -t 60` times out, `$REPLY` may be unset, causing error with `set -u`.
+
+**Fix:** Added `REPLY=""` initialization before both read statements.
+
+#### H2. Incorrect Comment in NextJS Profile (HIGH)
+
+**Location:** `profiles/nextjs/profile-config.yml:17-18`
+
+**Problem:** Comment incorrectly stated that `routing.md` doesn't exist in default profile.
+
+**Fix:** Updated comment to reflect that routing.md exists in default but is overridden.
+
+#### H3. Unqualified Cross-References in Standards (HIGH)
+
+**Location:** 8 standards files across global, frontend, and backend
+
+**Problem:** References like `queries.md` should be `backend/queries.md` for clarity.
+
+**Fix:** Qualified all references with category prefix:
+- `global/security.md` - 5 references fixed
+- `global/validation.md` - 3 references fixed
+- `global/error-handling.md` - 3 references fixed
+- `global/logging.md` - 5 references fixed
+- `frontend/components.md` - 3 references fixed
+- `frontend/accessibility.md` - 2 references fixed
+- `frontend/responsive.md` - 2 references fixed
+- `backend/models.md` - 3 references fixed
+
+#### H4. Error Recovery References Sparse (HIGH)
+
+**Location:** 7 workflows missing Error Recovery sections or references
+
+**Problem:** Only 10/25 workflows referenced error-recovery.md.
+
+**Fix:**
+- Added Error Recovery sections to `update-spec.md` and `verify-spec.md`
+- Added references to shared error-recovery workflow in 5 workflows:
+  - `analysis/feature-analysis.md`
+  - `documentation/generate-docs.md`
+  - `maintenance/dependency-audit.md`
+  - `maintenance/refactoring-analysis.md`
+  - `testing/test-strategy.md`
+
+#### H5. Race Condition in Backup Directory (HIGH)
+
+**Location:** `scripts/project-install.sh:584-654`
+
+**Problem:** Trap was set 40 lines after backup creation; if script crashed in between, backup wouldn't be cleaned up.
+
+**Fix:** Moved trap setup immediately after mktemp call.
+
+#### H6. exec Without Validation (HIGH)
+
+**Location:** `scripts/project-install.sh:687`
+
+**Problem:** `exec` called without checking if update script exists.
+
+**Fix:** Added file existence check before exec.
+
+#### H7. Inconsistent Error Handling Between Scripts (HIGH)
+
+**Location:** `scripts/project-update.sh:8`
+
+**Problem:** project-update used `set -eo pipefail` while project-install used `set -euo pipefail`.
+
+**Fix:** Standardized to `set -euo pipefail` in both scripts.
+
+### Modified Files
+
+| File | Modification |
+|------|--------------|
+| `scripts/project-install.sh` | H1 (REPLY init), H5 (trap move), H6 (exec validation) |
+| `scripts/project-update.sh` | H7 (standardized error flags) |
+| `profiles/nextjs/profile-config.yml` | H2 (comment correction) |
+| `profiles/default/standards/global/security.md` | H3 (qualified references) |
+| `profiles/default/standards/global/validation.md` | H3 (qualified references) |
+| `profiles/default/standards/global/error-handling.md` | H3 (qualified references) |
+| `profiles/default/standards/global/logging.md` | H3 (qualified references) |
+| `profiles/default/standards/frontend/components.md` | H3 (qualified references) |
+| `profiles/default/standards/frontend/accessibility.md` | H3 (qualified references) |
+| `profiles/default/standards/frontend/responsive.md` | H3 (qualified references) |
+| `profiles/default/standards/backend/models.md` | H3 (qualified references) |
+| `profiles/default/workflows/specification/update-spec.md` | H4 (added Error Recovery) |
+| `profiles/default/workflows/specification/verify-spec.md` | H4 (added Error Recovery) |
+| `profiles/default/workflows/analysis/feature-analysis.md` | H4 (added error-recovery reference) |
+| `profiles/default/workflows/documentation/generate-docs.md` | H4 (added error-recovery reference) |
+| `profiles/default/workflows/maintenance/dependency-audit.md` | H4 (added error-recovery reference) |
+| `profiles/default/workflows/maintenance/refactoring-analysis.md` | H4 (added error-recovery reference) |
+| `profiles/default/workflows/testing/test-strategy.md` | H4 (added error-recovery reference) |
+
+### Verification Results
+
+✅ All scripts pass bash syntax check (`bash -n`)
+✅ Error handling standardized across scripts
+✅ All standards cross-references qualified
+✅ Error Recovery sections/references added to 7 workflows
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| Issues fixed | 7 |
+| Files modified | 18 |
+| Lines added | ~80 |
+
+---
+
 ## [2025-12-26 23:40] Critical Issues Fix - Sparse Array & Duplicate Files
 
 ### Description

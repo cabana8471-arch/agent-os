@@ -225,3 +225,5 @@ If you encounter issues during refactoring analysis:
 3. **Unfamiliar Language/Framework**: Note limitations, focus on universal patterns (DRY, coupling)
 4. **No Clear Architecture**: Document this as primary finding, recommend architecture definition first
 5. **Generated/Vendored Code**: Exclude from analysis, note in report
+
+For implementation-related errors, refer to `{{workflows/implementation/error-recovery}}`

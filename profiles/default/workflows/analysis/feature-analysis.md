@@ -328,3 +328,5 @@ If you encounter issues during feature analysis:
 5. **Ambiguous Boundaries**: Document assumptions about feature boundaries
 6. **No Clear Architecture**: Note as finding, recommend architecture documentation first
 7. **Monorepo Structure**: Analyze each package separately, note cross-package features
+
+For implementation-related errors, refer to `{{workflows/implementation/error-recovery}}`

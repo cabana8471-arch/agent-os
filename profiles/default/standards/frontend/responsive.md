@@ -1,6 +1,6 @@
 ## Responsive design best practices
 
-> **Related Standards**: See `performance.md` for Core Web Vitals and mobile optimization, `css.md` for responsive styling methodology.
+> **Related Standards**: See `global/performance.md` for Core Web Vitals and mobile optimization, `frontend/css.md` for responsive styling methodology.
 
 - **Mobile-First Development**: Start with mobile layout and progressively enhance for larger screens
 - **Standard Breakpoints**: Consistently use standard breakpoints across the application (e.g., mobile, tablet, desktop)

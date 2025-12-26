@@ -196,3 +196,5 @@ If you encounter issues during documentation generation:
 2. **No Public APIs Found**: Document internal architecture overview instead
 3. **Incomplete Implementation**: Document what exists, mark incomplete areas as "TBD"
 4. **Existing Doc Conflicts**: Preserve existing structure, add new sections rather than overwriting
+
+For implementation-related errors, refer to `{{workflows/implementation/error-recovery}}`

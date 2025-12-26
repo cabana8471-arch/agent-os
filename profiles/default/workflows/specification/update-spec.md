@@ -172,3 +172,16 @@ Return ONLY this summary:
 - **Communicate impact clearly** - Ensure implementers understand what changed
 - **Keep changes focused** - Each update session should address one change request
 - **Version awareness** - Note which version of spec documents were modified
+
+## Error Recovery
+
+If you encounter issues during spec update:
+
+1. **Conflicting Changes**: Document both versions, ask user to clarify intent
+2. **Missing Original Spec**: Cannot update; recommend running write-spec workflow first
+3. **Broken Dependencies**: Note which tasks depend on changed requirements, flag for review
+4. **Implementation Already Complete**: Create follow-up modification tasks rather than invalidating completed work
+5. **User Unavailable for Clarification**: Document ambiguity, proceed with safest interpretation, flag for review
+6. **Large Scope Change**: Consider if this should be a new spec rather than an update
+
+For implementation-related errors, refer to `{{workflows/implementation/error-recovery}}`

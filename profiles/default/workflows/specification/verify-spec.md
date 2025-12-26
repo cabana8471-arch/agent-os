@@ -285,3 +285,16 @@ Before marking spec verification as complete, ensure all items in the Spec Compl
 - Document everything for transparency
 - Visual design elements must be traceable through all specs
 - Reusability should be prioritized in specs and tasks over creating new code
+
+## Error Recovery
+
+If you encounter issues during spec verification:
+
+1. **Missing Spec Files**: Cannot verify; recommend running write-spec workflow first
+2. **Missing Q&A Data**: Verify what's available, note incomplete verification in report
+3. **Corrupted Visual Files**: Skip visual verification, document as manual check required
+4. **Large Spec Documents**: Focus on critical sections (Goal, Requirements, Tasks), note areas not fully reviewed
+5. **Ambiguous Requirements**: Flag as finding rather than guessing intent
+6. **Conflicting Information**: Document all conflicts, recommend spec update to resolve
+
+For implementation-related errors, refer to `{{workflows/implementation/error-recovery}}`

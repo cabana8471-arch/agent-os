@@ -1,6 +1,6 @@
 ## UI component best practices
 
-> **Related Standards**: See `error-handling.md` for error boundary patterns, `accessibility.md` for accessible component design, `css.md` for styling methodology.
+> **Related Standards**: See `global/error-handling.md` for error boundary patterns, `frontend/accessibility.md` for accessible component design, `frontend/css.md` for styling methodology.
 
 - **Single Responsibility**: Each component should have one clear purpose and do it well
 - **Reusability**: Design components to be reused across different contexts with configurable props

@@ -210,3 +210,5 @@ If you encounter issues during dependency audit:
 3. **Network Errors**: Note CVE database unavailable, recommend retry later
 4. **Private Packages**: Skip private registry audit, document as manual check required
 5. **Monorepo Structure**: Audit each package separately, aggregate in summary
+
+For implementation-related errors, refer to `{{workflows/implementation/error-recovery}}`

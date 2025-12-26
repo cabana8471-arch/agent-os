@@ -5,7 +5,7 @@
 # Updates Agent OS installation in a project
 # =============================================================================
 
-set -eo pipefail  # Exit on error and pipe failures
+set -euo pipefail  # Exit on error, undefined vars, and pipe failures
 
 # Validate HOME is set before proceeding
 if [[ -z "${HOME:-}" ]]; then
