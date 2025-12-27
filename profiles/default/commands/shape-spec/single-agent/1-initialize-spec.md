@@ -10,7 +10,7 @@ Once you've initialized the spec folder, output the following message (replace `
 ```
 ✅ I have initialized the spec folder at `agent-os/specs/[spec-path]`.
 
-NEXT STEP 👉 Run the command `2-shape-spec.md` to shape the spec requirements.
+NEXT STEP 👉 Proceed to the next phase to shape the spec requirements.
 ```
 {{ENDUNLESS compiled_single_command}}
 

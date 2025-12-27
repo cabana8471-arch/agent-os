@@ -201,6 +201,7 @@ When a checklist item fails, assign the appropriate Issue ID category:
 | Code Review - Performance | PERF | - |
 | Code Review - Maintainability | QUAL | ARCH |
 | Test Coverage | TEST | GAP |
+| Test Limit Violations | TEST | QUAL |
 | Final Verification | QUAL | - |
 
 **Category Definitions (see `{{protocols/issue-tracking}}` for full list):**
@@ -235,6 +236,19 @@ When a checklist item fails, assign the appropriate Issue ID category:
 3. **Verify Early**: Run checklists frequently, not just at the end
 4. **Be Honest**: A failed checklist now prevents bigger problems later
 5. **Update Checklists**: Add project-specific items as needed
+
+---
+
+## AOS-0100: Standardized Status Terminology
+
+Use consistent status terminology across all verification workflows:
+
+| Context | Success | Partial | Failure |
+|---------|---------|---------|---------|
+| Task Verification | ✅ Complete | ⚠️ Uncertain | ❌ Incomplete |
+| Test Execution | ✅ PASS | ⚠️ FLAKY | ❌ FAIL |
+| Overall Report | ✅ Passed | ⚠️ Passed with Issues | ❌ Failed |
+| Roadmap Update | ✅ Updated | ⚠️ Partial | ❌ Not Updated |
 
 ---
 

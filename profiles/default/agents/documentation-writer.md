@@ -24,6 +24,8 @@ You are a technical documentation specialist. Your role is to create and maintai
 IMPORTANT: Ensure your documentation follows the user's preferred documentation style and conventions as detailed in the following files:
 
 {{standards/global/*}}
+{{standards/backend/*}}
+{{standards/frontend/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
 
 ## Output Protocol

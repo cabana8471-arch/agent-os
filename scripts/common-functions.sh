@@ -201,6 +201,13 @@ get_yaml_value() {
         return
     fi
 
+    # AOS-0096 Fix: Check file readability, not just existence
+    if [[ ! -r "$file" ]]; then
+        print_verbose "get_yaml_value: file not readable: $file"
+        echo "$default"
+        return
+    fi
+
     # AOS-0042 Fix: Handle empty key - would match all lines otherwise
     if [[ -z "$key" ]]; then
         print_verbose "get_yaml_value: empty key provided, returning default"
@@ -264,12 +271,19 @@ get_yaml_value() {
 
 # Get array values from YAML (handles - item format under a key)
 # More robust: handles variable indentation
+# AOS-0082 Fix: Returns non-zero if awk fails (partial results would not be returned)
 get_yaml_array() {
     local file=$1
     local key=$2
 
     if [[ ! -f "$file" ]]; then
-        return
+        return 0
+    fi
+
+    # AOS-0082 Fix: Check file readability
+    if [[ ! -r "$file" ]]; then
+        print_verbose "get_yaml_array: file not readable: $file"
+        return 1
     fi
 
     awk -v key="$key" '
@@ -327,7 +341,7 @@ get_yaml_array() {
                 }
             }
         }
-    ' "$file"
+    ' "$file" || return 1  # AOS-0082 Fix: Propagate awk errors
 }
 
 # -----------------------------------------------------------------------------
@@ -441,11 +455,15 @@ write_file() {
     # S-H2 Note: Race condition exists between mktemp and array add where an interrupt
     # could leave orphan temp file. This is acceptable as: (1) OS cleans /tmp on reboot,
     # (2) temp files are small, (3) complex signal blocking would add fragility.
+    # AOS-0095 Fix: Added fallback to system temp if directory-specific mktemp fails
     local temp_file
-    temp_file=$(mktemp "${dest_dir_path}/.tmp.XXXXXX") || {
-        print_error "Failed to create temporary file for: $dest"
-        return 1
-    }
+    if ! temp_file=$(mktemp "${dest_dir_path}/.tmp.XXXXXX" 2>/dev/null); then
+        # Fallback: Some systems don't support directory templates; use system temp
+        temp_file=$(mktemp) || {
+            print_error "Failed to create temporary file for: $dest"
+            return 1
+        }
+    fi
     # H1 Fix: Track temp file for cleanup in case of interruption
     _AGENT_OS_TEMP_FILES+=("$temp_file")
 
@@ -712,6 +730,8 @@ get_profile_files() {
                 fi
             # S-M11 Note: Suppress find stderr to ignore permission errors on unreadable dirs.
             # This is intentional as profile dirs may have mixed permissions.
+            # AOS-0092 Note: Empty results from find (due to errors or no matches) result in
+            # no output, which is the desired behavior for graceful degradation.
             done < <(find "$search_dir" -type f \( -name "*.md" -o -name "*.yml" -o -name "*.yaml" \) 2>/dev/null)
         fi
     done | sort -u
@@ -765,7 +785,9 @@ match_pattern() {
                                        -e 's/\*/[^\/]*/g' \
                                        -e 's/__DOUBLE_STAR__/.*/g')
 
-    if [[ "$path" =~ ^${regex}$ ]]; then
+    # AOS-0083 Fix: Use LC_ALL=C for locale-independent regex matching
+    # This ensures character classes like [a-z] behave consistently across locales
+    if LC_ALL=C [[ "$path" =~ ^${regex}$ ]]; then
         return 0
     else
         return 1
@@ -806,9 +828,13 @@ replace_playwright_tools() {
 #   - Empty stack on ENDIF/ENDUNLESS: Warning logged, continue processing
 #
 # Limitations:
-#   - Nesting is supported but deeply nested conditions (>10 levels) may behave unexpectedly
+#   - Nesting is supported but deeply nested conditions (>50 levels) will abort with error
 #   - Same-line opening and closing tags are not supported
 #   - Conditionals must be on their own lines
+#
+# AOS-0084 Fix: Added hard limit of 50 levels to prevent DoS via deeply nested templates
+readonly MAX_CONDITIONAL_NESTING_DEPTH=50
+
 process_conditionals() {
     local content=$1
     local use_claude_code_subagents=$2
@@ -856,6 +882,11 @@ process_conditionals() {
             fi
 
             ((nesting_level++)) || true
+            # AOS-0084 Fix: Hard limit check to prevent DoS
+            if [[ $nesting_level -gt $MAX_CONDITIONAL_NESTING_DEPTH ]]; then
+                print_error "Conditional nesting too deep (max $MAX_CONDITIONAL_NESTING_DEPTH levels)"
+                return 1
+            fi
             continue
         fi
 
@@ -892,6 +923,11 @@ process_conditionals() {
             fi
 
             ((nesting_level++)) || true
+            # AOS-0084 Fix: Hard limit check to prevent DoS
+            if [[ $nesting_level -gt $MAX_CONDITIONAL_NESTING_DEPTH ]]; then
+                print_error "Conditional nesting too deep (max $MAX_CONDITIONAL_NESTING_DEPTH levels)"
+                return 1
+            fi
             continue
         fi
 
@@ -1498,13 +1534,12 @@ process_phase_tags() {
 #
 # AOS-0045 Documentation: Sequential Replacement Processing
 # Performance Note: This function performs multiple sequential text replacements:
-#   1. Role data replacements (custom template variables)
-#   2. Conditional tag processing (IF/UNLESS blocks)
-#   3. Workflow reference replacements
-#   4. Protocol reference replacements
-#   5. Standards reference replacements
-#   6. PHASE tag replacements (if phase_mode="embed")
-#   7. Playwright tool expansion
+#   1. Conditional tag processing (IF/UNLESS blocks)
+#   2. Workflow reference replacements
+#   3. Protocol reference replacements
+#   4. Standards reference replacements
+#   5. PHASE tag replacements (if phase_mode="embed")
+#   6. Playwright tool expansion
 #
 # Each replacement uses perl for reliable handling of special characters and
 # multiline content. While this is O(n*m) where n=content size and m=replacement types,
@@ -1515,89 +1550,9 @@ compile_agent() {
     local dest_file=$2
     local base_dir=$3
     local profile=$4
-    local role_data=$5
-    local phase_mode=${6:-""}  # Optional: "embed" to embed PHASE content, or empty for no processing
+    local phase_mode=${5:-""}  # Optional: "embed" to embed PHASE content, or empty for no processing
 
     local content=$(cat "$source_file")
-
-    # Process role replacements if provided
-    if [[ -n "$role_data" ]]; then
-        # M2 Note: Process each role replacement using delimiter-based format
-        # Format: <<<KEY>>>\nvalue content\n<<<END>>>
-        # Limitation: If value content contains the literal string "<<<END>>>",
-        # parsing will terminate prematurely. This is acceptable because:
-        # 1. This pattern is unlikely in normal content
-        # 2. The delimiter syntax is internal to the compile pipeline
-        # 3. Adding escape handling would significantly complicate the parser
-        local temp_role_data=$(create_temp_file)
-        echo "$role_data" > "$temp_role_data"
-
-        # Parse the delimiter-based format
-        while IFS= read -r line; do
-            if [[ "$line" =~ ^'<<<'(.+)'>>>'$ ]]; then
-                local key="${BASH_REMATCH[1]}"
-                local value=""
-
-                # Read until we hit <<<END>>>
-                while IFS= read -r value_line; do
-                    if [[ "$value_line" == "<<<END>>>" ]]; then
-                        break
-                    fi
-                    if [[ -n "$value" ]]; then
-                        value="${value}"$'\n'"${value_line}"
-                    else
-                        value="${value_line}"
-                    fi
-                done
-
-                if [[ -n "$key" ]]; then
-                    # Create tracked temp files for the replacement
-                    local temp_content=$(create_temp_file)
-                    local temp_value=$(create_temp_file)
-                    echo "$content" > "$temp_content"
-                    echo "$value" > "$temp_value"
-
-                    # Use perl to replace without escaping newlines
-                    local perl_result
-                    perl_result=$(perl -e '
-                        use strict;
-                        use warnings;
-
-                        my $key = $ARGV[0];
-                        my $value_file = $ARGV[1];
-                        my $content_file = $ARGV[2];
-
-                        # Read value
-                        open(my $fh, "<", $value_file) or die $!;
-                        my $value = do { local $/; <$fh> };
-                        close($fh);
-                        chomp $value;
-
-                        # Read content
-                        open($fh, "<", $content_file) or die $!;
-                        my $content = do { local $/; <$fh> };
-                        close($fh);
-
-                        # Do the replacement - use quotemeta on entire pattern (no role. prefix)
-                        my $pattern = quotemeta("{{" . $key . "}}");
-                        $content =~ s/$pattern/$value/g;
-
-                        print $content;
-                    ' "$key" "$temp_value" "$temp_content" 2>/dev/null)
-                    local perl_exit=$?
-                    remove_temp_file "$temp_content"
-                    remove_temp_file "$temp_value"
-                    if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
-                        print_warning "Perl replacement failed for role key: $key (exit=$perl_exit)"
-                    else
-                        content="$perl_result"
-                    fi
-                fi
-            fi
-        done < "$temp_role_data"
-
-        remove_temp_file "$temp_role_data"
-    fi
 
     # Process conditional compilation tags
     # Uses global variables: EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS, EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS
@@ -1736,7 +1691,7 @@ compile_command() {
         phase_mode=""
     fi
 
-    compile_agent "$source_file" "$dest_file" "$base_dir" "$profile" "" "$phase_mode"
+    compile_agent "$source_file" "$dest_file" "$base_dir" "$profile" "$phase_mode"
 }
 
 # -----------------------------------------------------------------------------
@@ -2273,7 +2228,8 @@ create_standard_skill() {
     # Remove "standards/" prefix and ".md" extension for skill directory name
     # Convert path separators to hyphens
     # Example: "standards/frontend/css.md" -> "frontend-css"
-    local skill_name=$(echo "$standards_file" | sed 's|^standards/||' | sed 's|\.md$||' | sed 's|/|-|g')
+    # AOS-0097 Fix: Sanitize skill_name to only allow alphanumeric chars, hyphens, and underscores
+    local skill_name=$(echo "$standards_file" | sed 's|^standards/||' | sed 's|\.md$||' | sed 's|/|-|g' | sed 's|[^a-zA-Z0-9_-]||g')
 
     # Get human-readable name from the full path (excluding "standards/")
     # Example: "standards/frontend/css.md" -> "frontend CSS" (lowercase)

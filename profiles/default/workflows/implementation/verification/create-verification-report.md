@@ -140,5 +140,7 @@ If verification report cannot be created:
 1. **Missing verification data:** Run `verify-tasks.md` and `run-all-tests.md` first
 2. **Conflicting results:** Document discrepancies in the report and mark as "⚠️ Passed with Issues"
 3. **Critical failures found:** Mark report as "❌ Failed" and list required fixes
+4. **Code review not completed:** Run code-review workflow before creating final verification report
+5. **Missing implementation documentation:** Some implementation reports may be missing - document as gaps in the verification report
 
 For other errors, refer to `{{workflows/implementation/error-recovery}}`

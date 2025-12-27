@@ -16,3 +16,14 @@ Instructions to follow in sequence:
 {{PHASE 3: @agent-os/commands/implement-tasks/single-agent/3-code-review.md}}
 
 {{PHASE 4: @agent-os/commands/implement-tasks/single-agent/4-verify-implementation.md}}
+
+## Completion
+
+After all four phases are complete (determine tasks, implement, code review, verify):
+
+**Implementation complete!** The verification report confirms this spec is fully implemented.
+
+**NEXT STEPS:**
+1. Check the roadmap in `agent-os/product/roadmap.md` for remaining features
+2. Run `/shape-spec` or `/write-spec` to start the next feature
+3. Run `/analyze-features` to discover new feature opportunities

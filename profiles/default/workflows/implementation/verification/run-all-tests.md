@@ -11,6 +11,8 @@ Before running this workflow, verify:
 - [ ] Code review status is "Approved" or "Approved with Comments"
 - [ ] All task-group-specific tests are passing
 
+**Important:** All verification outputs use the `verification/` folder (singular, not `verifications/`).
+
 ## When to Use This Workflow
 
 - After ALL task groups are marked complete

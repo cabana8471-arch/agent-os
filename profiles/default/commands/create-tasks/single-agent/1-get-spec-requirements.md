@@ -16,7 +16,7 @@ Once you've confirmed you have the spec and/or requirements, output the followin
 ```
 ✅ I have the spec and requirements `[spec and requirements path]`.
 
-NEXT STEP 👉 Run the command `2-create-tasks-list.md` to create the tasks list.
+NEXT STEP 👉 Proceed to the next phase to create the tasks list.
 ```
 {{ENDUNLESS compiled_single_command}}
 

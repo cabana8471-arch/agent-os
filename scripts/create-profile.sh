@@ -95,8 +95,9 @@ validate_profile_name() {
             return 1
         fi
     fi
+    # AOS-0093 Note: If cd fails (invalid path), resolved_path is empty, triggering the error below
     resolved_path=$(cd "$PROFILES_DIR/$name" 2>/dev/null && pwd)
-    if [[ "$resolved_path" != "$PROFILES_DIR/$name" ]]; then
+    if [[ -z "$resolved_path" ]] || [[ "$resolved_path" != "$PROFILES_DIR/$name" ]]; then
         # Clean up only if WE created the directory
         if [[ "$created_test_dir" == true ]]; then
             rmdir "$PROFILES_DIR/$name" 2>/dev/null || true
@@ -231,6 +232,8 @@ select_inheritance() {
         print_status "Should this profile inherit from the '${profiles[0]}' profile?"
         echo ""
         # AOS-0074 Fix: Added 120-second timeout for interactive input
+        # AOS-0094 Fix: Initialize inherit_choice before read to handle interrupts
+        local inherit_choice=""
         if ! read -t 120 -p "$(echo -e "${BLUE}Inherit from '${profiles[0]}'? (y/n): ${NC}")" inherit_choice; then
             echo
             print_warning "Input timeout"

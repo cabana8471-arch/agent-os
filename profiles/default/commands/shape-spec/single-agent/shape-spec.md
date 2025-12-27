@@ -7,3 +7,9 @@ Instructions to follow in sequence:
 {{PHASE 1: @agent-os/commands/shape-spec/single-agent/1-initialize-spec.md}}
 
 {{PHASE 2: @agent-os/commands/shape-spec/single-agent/2-shape-spec.md}}
+
+## Completion
+
+After both phases are complete (initialize spec and shape requirements):
+
+**NEXT STEP 👉** Run `/write-spec` to create the detailed specification document!

@@ -7,3 +7,9 @@ Instructions to follow in sequence:
 {{PHASE 1: @agent-os/commands/create-tasks/single-agent/1-get-spec-requirements.md}}
 
 {{PHASE 2: @agent-os/commands/create-tasks/single-agent/2-create-tasks-list.md}}
+
+## Completion
+
+After both phases are complete (get requirements and create tasks list):
+
+**NEXT STEP 👉** Run `/implement-tasks` (simple) or `/orchestrate-tasks` (advanced multi-agent) to start building!

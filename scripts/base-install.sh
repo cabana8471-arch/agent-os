@@ -231,8 +231,12 @@ for item in data.get('tree', []):
 
         # Parse JSON using sed and awk - less reliable but works for simple cases
         # AOS-0003 Fix: Capture output first to validate results aren't empty/corrupted
+        # AOS-0091 Fix: Explicitly check for awk command failure
         local parsed_files
-        parsed_files=$(echo "$response" | awk -F'"' '/"type":"blob"/{blob=1} blob && /"path":/{print $4; blob=0}')
+        if ! parsed_files=$(echo "$response" | awk -F'"' '/"type":"blob"/{blob=1} blob && /"path":/{print $4; blob=0}' 2>&1); then
+            print_error "awk command failed: $parsed_files"
+            return 1
+        fi
 
         # AOS-0003 Fix: Validate that awk parsing produced reasonable output
         local parsed_count

@@ -108,24 +108,35 @@ parse_arguments() {
                 PROFILE="$2"
                 shift 2
                 ;;
+            # AOS-0085/AOS-0090 Fix: Initialize shift_count and validate it's numeric
             --claude-code-commands)
+                shift_count=1
                 read CLAUDE_CODE_COMMANDS shift_count <<< "$(parse_bool_flag "$CLAUDE_CODE_COMMANDS" "$2")"
+                [[ "$shift_count" =~ ^[0-9]+$ ]] || shift_count=1
                 shift $shift_count
                 ;;
             --use-claude-code-subagents)
+                shift_count=1
                 read USE_CLAUDE_CODE_SUBAGENTS shift_count <<< "$(parse_bool_flag "$USE_CLAUDE_CODE_SUBAGENTS" "$2")"
+                [[ "$shift_count" =~ ^[0-9]+$ ]] || shift_count=1
                 shift $shift_count
                 ;;
             --agent-os-commands)
+                shift_count=1
                 read AGENT_OS_COMMANDS shift_count <<< "$(parse_bool_flag "$AGENT_OS_COMMANDS" "$2")"
+                [[ "$shift_count" =~ ^[0-9]+$ ]] || shift_count=1
                 shift $shift_count
                 ;;
             --standards-as-claude-code-skills)
+                shift_count=1
                 read STANDARDS_AS_CLAUDE_CODE_SKILLS shift_count <<< "$(parse_bool_flag "$STANDARDS_AS_CLAUDE_CODE_SKILLS" "$2")"
+                [[ "$shift_count" =~ ^[0-9]+$ ]] || shift_count=1
                 shift $shift_count
                 ;;
             --lazy-load-workflows)
+                shift_count=1
                 read LAZY_LOAD_WORKFLOWS shift_count <<< "$(parse_bool_flag "$LAZY_LOAD_WORKFLOWS" "$2")"
+                [[ "$shift_count" =~ ^[0-9]+$ ]] || shift_count=1
                 shift $shift_count
                 ;;
             --re-install)
@@ -346,7 +357,7 @@ install_claude_code_agents() {
                 local dest="$target_dir/$filename"
 
                 # Compile with workflow and standards injection
-                local compiled=$(compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
+                local compiled=$(compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE")
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi

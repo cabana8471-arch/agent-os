@@ -14,6 +14,8 @@ Before running this workflow, verify:
 - [ ] `[spec-path]/spec.md` exists
 - [ ] Implementation phase has been declared complete by implementer
 
+**Important:** All verification outputs use the `verification/` folder (singular, not `verifications/`).
+
 ## Workflow
 
 ### Step 1: Load Task List

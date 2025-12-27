@@ -299,12 +299,10 @@ src/
 Return ONLY this summary:
 
 ```
-Feature analysis complete.
-Report: agent-os/reports/feature-analysis-[date].md
-Summary: [X] features discovered | [Y] patterns | [Z] proposals
-Duplicates: [None found / X potential overlaps identified]
-Gaps: [N] missing features identified
-Next: Review report and prioritize recommendations
+✅ Feature analysis complete.
+📁 Report: agent-os/reports/feature-analysis-[date].md
+📊 Summary: [X] features | [Y] patterns | [Z] proposals | Duplicates: [W] | Gaps: [N]
+⏱️ Next: Review report and prioritize recommendations
 ```
 
 **Do NOT include** detailed feature catalogs, pattern descriptions, full proposals, or gap analysis in the conversation response.

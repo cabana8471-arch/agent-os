@@ -14,7 +14,7 @@ Once you've gathered all of the necessary information, output the following mess
 ```
 I have all the info I need to help you plan this product.
 
-NEXT STEP 👉 Run `2-create-mission.md` to create the product mission.
+NEXT STEP 👉 Proceed to the next phase to create the product mission.
 ```
 {{ENDUNLESS compiled_single_command}}
 

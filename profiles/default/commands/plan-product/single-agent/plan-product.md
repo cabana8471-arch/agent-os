@@ -16,3 +16,9 @@ Instructions to follow in sequence:
 {{PHASE 3: @agent-os/commands/plan-product/single-agent/3-create-roadmap.md}}
 
 {{PHASE 4: @agent-os/commands/plan-product/single-agent/4-create-tech-stack.md}}
+
+## Completion
+
+After all four phases are complete (product concept, mission, roadmap, tech stack):
+
+**NEXT STEP 👉** Run `/shape-spec` or `/write-spec` to start planning your first feature!
