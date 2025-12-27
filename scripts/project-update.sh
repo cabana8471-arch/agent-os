@@ -869,8 +869,12 @@ perform_update_cleanup() {
                 backup_failed=true
             fi
         fi
+        # H2 Fix: Abort update if backup failed - prevents data loss on rollback
         if [[ "$backup_failed" == true ]]; then
-            print_warning "Some backups failed - rollback may be incomplete if errors occur"
+            print_error "Backup failed - aborting update to prevent potential data loss"
+            print_error "Please manually backup your agent-os installation before retrying"
+            rm -rf "$_UPDATE_BACKUP_DIR" 2>/dev/null
+            exit 1
         fi
         print_verbose "Backup created at: $_UPDATE_BACKUP_DIR"
     fi
@@ -999,7 +1003,9 @@ main() {
         # Perform cleanup and update
         perform_update_cleanup
 
-        # Set PROJECT_* variables to match EFFECTIVE_* for perform_update to use
+        # H4 Fix: Set PROJECT_* variables to match EFFECTIVE_* for perform_update to use
+        # Including PROJECT_VERSION to ensure config.yml is written with the new version
+        PROJECT_VERSION="$EFFECTIVE_VERSION"
         PROJECT_PROFILE="$EFFECTIVE_PROFILE"
         PROJECT_CLAUDE_CODE_COMMANDS="$EFFECTIVE_CLAUDE_CODE_COMMANDS"
         PROJECT_USE_CLAUDE_CODE_SUBAGENTS="$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS"

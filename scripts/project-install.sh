@@ -542,30 +542,62 @@ rollback_reinstall_from_backup() {
     if [[ -n "$_REINSTALL_BACKUP_DIR" ]] && [[ -d "$_REINSTALL_BACKUP_DIR" ]]; then
         print_warning "Re-installation failed! Rolling back from backup..."
 
-        # Restore backed up directories
+        # H3 Fix: Track restore failures and notify user
+        local restore_failed=false
+        local restored_count=0
+        local failed_items=""
+
+        # Restore backed up directories with error tracking
         if [[ -d "$_REINSTALL_BACKUP_DIR/agent-os" ]]; then
-            cp -rp "$_REINSTALL_BACKUP_DIR/agent-os" "$PROJECT_DIR/" 2>/dev/null || true
+            if cp -rp "$_REINSTALL_BACKUP_DIR/agent-os" "$PROJECT_DIR/" 2>/dev/null; then
+                ((restored_count++))
+            else
+                restore_failed=true
+                failed_items="${failed_items}agent-os, "
+            fi
         fi
         if [[ -d "$_REINSTALL_BACKUP_DIR/.claude/agents/agent-os" ]]; then
             mkdir -p "$PROJECT_DIR/.claude/agents"
-            cp -rp "$_REINSTALL_BACKUP_DIR/.claude/agents/agent-os" "$PROJECT_DIR/.claude/agents/" 2>/dev/null || true
+            if cp -rp "$_REINSTALL_BACKUP_DIR/.claude/agents/agent-os" "$PROJECT_DIR/.claude/agents/" 2>/dev/null; then
+                ((restored_count++))
+            else
+                restore_failed=true
+                failed_items="${failed_items}.claude/agents/agent-os, "
+            fi
         fi
         if [[ -d "$_REINSTALL_BACKUP_DIR/.claude/commands/agent-os" ]]; then
             mkdir -p "$PROJECT_DIR/.claude/commands"
-            cp -rp "$_REINSTALL_BACKUP_DIR/.claude/commands/agent-os" "$PROJECT_DIR/.claude/commands/" 2>/dev/null || true
+            if cp -rp "$_REINSTALL_BACKUP_DIR/.claude/commands/agent-os" "$PROJECT_DIR/.claude/commands/" 2>/dev/null; then
+                ((restored_count++))
+            else
+                restore_failed=true
+                failed_items="${failed_items}.claude/commands/agent-os, "
+            fi
         fi
         if [[ -d "$_REINSTALL_BACKUP_DIR/.claude/skills" ]]; then
-            mkdir -p "$PROJECT_DIR/.claude"
+            mkdir -p "$PROJECT_DIR/.claude/skills"
             # Only restore Agent OS skills
             for skill_dir in "$_REINSTALL_BACKUP_DIR/.claude/skills"/*; do
                 if [[ -d "$skill_dir" ]]; then
-                    cp -rp "$skill_dir" "$PROJECT_DIR/.claude/skills/" 2>/dev/null || true
+                    if cp -rp "$skill_dir" "$PROJECT_DIR/.claude/skills/" 2>/dev/null; then
+                        ((restored_count++))
+                    else
+                        restore_failed=true
+                        failed_items="${failed_items}$(basename "$skill_dir"), "
+                    fi
                 fi
             done
         fi
 
-        rm -rf "$_REINSTALL_BACKUP_DIR"
-        print_error "Rollback complete. Previous installation restored."
+        # Notify user of restore status
+        if [[ "$restore_failed" == true ]]; then
+            print_error "PARTIAL RESTORE: Some items could not be restored: ${failed_items%, }"
+            print_error "Backup preserved at: $_REINSTALL_BACKUP_DIR"
+            print_error "You may need to manually restore from backup"
+        else
+            rm -rf "$_REINSTALL_BACKUP_DIR"
+            print_error "Rollback complete. Previous installation restored ($restored_count items)."
+        fi
     fi
 }
 

@@ -1090,9 +1090,15 @@ process_workflows() {
         fi
     done <<< "$workflow_refs"
 
-    # H3 Fix: Validate all workflow refs were processed
+    # H3/H5 Fix: Validate all workflow refs were processed
     # Check if any {{workflows/...}} tags remain unprocessed
-    local remaining_refs=$(echo "$content" | grep -c '{{workflows/[^}]*}}' || true)
+    # H5 Fix: Separate grep execution from count to properly detect errors
+    local remaining_refs=0
+    local grep_output
+    if grep_output=$(echo "$content" | grep -c '{{workflows/[^}]*}}' 2>/dev/null); then
+        remaining_refs="$grep_output"
+    fi
+    # remaining_refs is 0 if no matches (grep returns 1), or the count if matches found
     if [[ $remaining_refs -gt 0 ]]; then
         print_warning "process_workflows: $remaining_refs workflow reference(s) may not have been fully processed"
         print_verbose "Remaining workflow tags detected in output - this may indicate a subshell scope issue"

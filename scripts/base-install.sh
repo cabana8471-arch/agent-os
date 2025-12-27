@@ -283,8 +283,10 @@ install_all_files() {
 
     # Stop spinner if running
     if [[ -n "$spinner_pid" ]]; then
-        kill $spinner_pid 2>/dev/null
-        wait $spinner_pid 2>/dev/null
+        # H1 Fix: Quote PID to prevent killing wrong process if unset/corrupted
+        kill "$spinner_pid" 2>/dev/null
+        wait "$spinner_pid" 2>/dev/null
+        spinner_pid=""  # Reset after kill to prevent issues with multiple calls
         # Clear the line and restore cursor
         echo -ne "\r\033[K"
         tput cnorm 2>/dev/null || true  # Show cursor again
