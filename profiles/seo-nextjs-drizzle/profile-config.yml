@@ -1,12 +1,12 @@
 inherits_from: nextjs
 
 # Override only files that differ from nextjs profile
+# NOTE: Local files take precedence over inherited files, so only exclude files
+# that don't have local overrides. Files with local versions (validation.md,
+# error-handling.md, security.md) don't need to be excluded.
 exclude_inherited_files:
   # Global overrides
   - standards/global/tech-stack.md
-  - standards/global/validation.md
-  - standards/global/error-handling.md
-  - standards/global/security.md
   - standards/global/project-structure.md
 
   # Backend overrides (Drizzle + BetterAuth vs Prisma + generic auth)
