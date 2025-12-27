@@ -4,7 +4,61 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
-## [2025-12-27 09:30] MEDIUM/LOW Priority Issues Fix - Agents, Commands, Protocols
+## [2025-12-27 10:15] LOW Priority Issues Fix - Standards, Workflows, Profiles
+
+### Description
+
+Fixed issues from "Partea 3: STANDARDE, WORKFLOW-URI, PROFILE" of the comprehensive analysis report. These fixes improve cross-reference consistency, add missing Pre-conditions to workflows, fix example paths in profile configs, and standardize section headers across standards.
+
+### Issues Fixed
+
+| # | Location | Problem | Fix |
+|---|----------|---------|-----|
+| M26 | backend/api.md:12 | Unqualified path: `error-handling.md` | Qualified to `global/error-handling.md` |
+| L14 | woocommerce/profile-config.yml:4-7 | Incorrect example paths in comments | Fixed to realistic paths (`api.md`, `migrations.md`, `implement-tasks.md`) |
+| L15 | workflows/implementation/error-recovery.md | Missing Pre-conditions section | Added Pre-conditions checklist |
+| L16 | frontend/routing.md, frontend/state-management.md | Title case "Best Practices" inconsistent | Changed to lowercase "best practices" |
+
+### Already Fixed (Verified)
+
+| # | Issue | Status |
+|---|-------|--------|
+| M27 | backend/queries.md unqualified paths | ✅ Already qualified with prefixes |
+| M28 | frontend/css.md unqualified paths | ✅ Already qualified with prefixes |
+| M29 | issue-tracking.md completeness | ✅ Already has severity levels and examples |
+| L12 | deprecation.md missing from TOC | ✅ Already in standards/_toc.md |
+| L13 | update-roadmap.md missing from TOC | ✅ Already in workflows/_toc.md |
+| L17 | Standard references in child profiles | ✅ Verified OK (standalone design) |
+
+### Modified Files
+
+| File | Modification |
+|------|--------------|
+| `profiles/default/standards/backend/api.md` | M26 (qualified `error-handling.md` → `global/error-handling.md`) |
+| `profiles/woocommerce/profile-config.yml` | L14 (fixed example paths in comments) |
+| `profiles/default/workflows/implementation/error-recovery.md` | L15 (added Pre-conditions section) |
+| `profiles/default/standards/frontend/routing.md` | L16 (changed "Best Practices" → "best practices") |
+| `profiles/default/standards/frontend/state-management.md` | L16 (changed "Best Practices" → "best practices") |
+
+### Verification Results
+
+✅ All cross-references now use qualified paths
+✅ Profile example paths match actual file structure
+✅ All workflows have Pre-conditions sections
+✅ Section headers follow consistent lowercase format
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| Issues fixed | 4 |
+| Issues verified as already fixed | 6 |
+| Files modified | 5 |
+| Lines added | ~10 |
+
+---
+
+## [2025-12-27 08:00] MEDIUM/LOW Priority Issues Fix - Agents, Commands, Protocols
 
 ### Description
 

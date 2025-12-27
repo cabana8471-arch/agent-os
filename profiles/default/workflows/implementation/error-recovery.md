@@ -1,5 +1,11 @@
 # Error Recovery Workflow
 
+## Pre-conditions
+
+- [ ] An error or failure has occurred during implementation, testing, or verification
+- [ ] Error details are available (error message, logs, or failure report)
+- [ ] Spec path is known for the affected feature
+
 ## Core Responsibilities
 
 1. **Identify Error Type**: Categorize the error to determine recovery strategy

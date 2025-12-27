@@ -1,6 +1,6 @@
 > **Related Standards**: See `frontend/routing.md` for URL state, `frontend/components.md` for component state patterns, `global/performance.md` for state optimization.
 
-## State Management Best Practices
+## State management best practices
 
 ### State Location
 

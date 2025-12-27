@@ -9,7 +9,7 @@
 - **Plural Nouns**: Use plural nouns for resource endpoints (e.g., `/users`, `/products`) for consistency
 - **Nested Resources**: Limit nesting depth to 2-3 levels maximum to keep URLs readable and maintainable
 - **Query Parameters**: Use query parameters for filtering, sorting, pagination, and search rather than creating separate endpoints
-- **HTTP Status Codes**: Return appropriate, consistent HTTP status codes that accurately reflect the response (200, 201, 400, 404, 500, etc.) - see `error-handling.md` for error categories
+- **HTTP Status Codes**: Return appropriate, consistent HTTP status codes that accurately reflect the response (200, 201, 400, 404, 500, etc.) - see `global/error-handling.md` for error categories
 - **Rate Limiting Headers**: Include rate limit information in response headers to help clients manage their usage
 - **Consistent Response Format**: Use consistent JSON structure for all responses:
   ```json

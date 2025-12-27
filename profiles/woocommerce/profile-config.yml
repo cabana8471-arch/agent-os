@@ -2,6 +2,6 @@ inherits_from: wordpress
 
 # Uncomment and modify to exclude specific inherited files:
 # exclude_inherited_files:
-#   - standards/backend/api/*
-#   - standards/backend/database/migrations.md
-#   - workflows/implementation/specific-workflow.md
+#   - standards/backend/api.md
+#   - standards/backend/migrations.md
+#   - workflows/implementation/implement-tasks.md
