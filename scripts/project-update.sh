@@ -192,7 +192,10 @@ load_configurations() {
     EFFECTIVE_LAZY_LOAD_WORKFLOWS="${LAZY_LOAD_WORKFLOWS:-$BASE_LAZY_LOAD_WORKFLOWS}"
     EFFECTIVE_VERSION="$BASE_VERSION"
 
-    # Validate config but suppress warnings (will show after user confirms update)
+    # M7 Note: Validate config but suppress warnings here (first validation)
+    # Warnings will be shown after user confirms update (at line 995)
+    # This dual-call design allows early detection of invalid config while
+    # deferring warning display until user commits to the update
     validate_config "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$EFFECTIVE_PROFILE" "false"
 
     print_verbose "Base configuration:"
@@ -492,7 +495,9 @@ update_claude_code_files() {
     done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "agents")
 
     if [[ "$DRY_RUN" != "true" ]]; then
-        # Count commands separately
+        # M26 Note: Count commands separately using substring pattern matching
+        # The pattern ".claude/commands/agent-os" is safe because file paths are
+        # generated internally (not user input) and contain only valid path characters
         local command_pattern=".claude/commands/agent-os"
         local commands_actual_updated=0
         local commands_actual_skipped=0
@@ -551,23 +556,32 @@ update_claude_code_files() {
 }
 
 # Update agent-os folder and configuration
+# M25 Note: File count tracking is handled at the update summary level
+# (see perform_update dry-run output). The config update is a single file.
 update_agent_os_folder() {
     print_status "Updating agent-os folder"
 
-    # Update the configuration file
+    # Update the configuration file (1 file: agent-os/config.yml)
     write_project_config "$EFFECTIVE_VERSION" "$PROJECT_PROFILE" \
         "$PROJECT_CLAUDE_CODE_COMMANDS" "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" \
         "$PROJECT_AGENT_OS_COMMANDS" "$PROJECT_STANDARDS_AS_CLAUDE_CODE_SKILLS" \
         "$PROJECT_LAZY_LOAD_WORKFLOWS"
 
     if [[ "$DRY_RUN" != "true" ]]; then
-        echo "✓ Updated agent-os folder"
+        echo "✓ Updated agent-os folder (1 config file)"
         echo "✓ Updated agent-os project configuration"
     fi
 }
 
 # Perform update
 perform_update() {
+    # M8 Fix: Validate PROJECT_PROFILE is not empty (could happen if config.yml is corrupted)
+    if [[ -z "$PROJECT_PROFILE" ]]; then
+        print_error "PROJECT_PROFILE is empty. This may indicate a corrupted config.yml"
+        print_error "Please check agent-os/config.yml or reinstall with: project-install.sh --re-install"
+        return 1
+    fi
+
     # Display configuration at the top
     echo ""
     print_status "Configuration:"
@@ -919,7 +933,9 @@ perform_update_cleanup() {
         fi
     fi
 
-    # Delete individual Agent OS skills (new location: .claude/skills/[skill-name]/)
+    # M10 Note: Delete individual Agent OS skills (new location: .claude/skills/[skill-name]/)
+    # At this point PROJECT_PROFILE is still the OLD profile, so we correctly clean
+    # skills from the old profile before install_claude_code_skills installs new profile skills
     # Find all skills that match standards files from the profile
     if [[ -d "$PROJECT_DIR/.claude/skills" ]]; then
         while read file; do
@@ -995,7 +1011,10 @@ main() {
         validate_config "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$EFFECTIVE_PROFILE" "true"
         echo ""
 
-        # Set up trap to rollback on error (only for non-dry-run)
+        # M9 Note: Set up trap to rollback on error (only for non-dry-run)
+        # In dry-run mode, no files are modified so no rollback is needed.
+        # cleanup_backup_on_success (line 1032) is also only called for non-dry-run,
+        # maintaining consistency between trap setup and cleanup
         if [[ "$DRY_RUN" != "true" ]]; then
             trap 'rollback_from_backup' ERR
         fi

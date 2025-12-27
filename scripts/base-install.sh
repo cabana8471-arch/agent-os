@@ -57,6 +57,12 @@ download_common_functions() {
 # Initialize common functions
 # -----------------------------------------------------------------------------
 
+# M19 Fix: Check for curl BEFORE trying to download anything
+if ! command -v curl &> /dev/null; then
+    bootstrap_error "curl is required but not installed. Please install curl and try again."
+    exit 1
+fi
+
 bootstrap_print "Initializing..."
 download_common_functions
 
@@ -93,7 +99,13 @@ download_file() {
     mkdir -p "$(dirname "$dest_path")"
 
     if curl -sL --fail "$file_url" -o "$dest_path"; then
-        return 0
+        # M15 Fix: Verify file was actually created and has content
+        if [[ -f "$dest_path" ]] && [[ -s "$dest_path" ]]; then
+            return 0
+        else
+            rm -f "$dest_path" 2>/dev/null || true
+            return 1
+        fi
     else
         return 1
     fi
@@ -152,7 +164,8 @@ get_all_repo_files() {
         return 1
     fi
 
-    # Debug: Show first 500 chars of response
+    # M16 Fix: Debug: Show first 500 chars of response
+    # Note: The response is safely quoted in substring expansion; print_verbose also quotes args
     print_verbose "Response preview: ${response:0:500}"
 
     if echo "$response" | grep -q '"message"'; then
@@ -202,6 +215,9 @@ for item in data.get('tree', []):
 }
 
 # Download all files from the repository
+# M17 & M18 Fix: Standardized return pattern:
+# - Outputs file count to stdout (always)
+# - Returns 0 if any files downloaded, 1 if none downloaded
 download_all_files() {
     local dest_base=$1
     local file_count=0
@@ -211,8 +227,10 @@ download_all_files() {
     # Get list of all files (excluding our exclusion list)
     local all_files=$(get_all_repo_files)
 
+    # M17 Fix: Check for empty result from get_all_repo_files
     if [[ -z "$all_files" ]]; then
-        echo "0"  # Return 0 to indicate no files downloaded
+        print_verbose "No files returned from repository"
+        echo "0"
         return 1
     fi
 
@@ -235,6 +253,8 @@ download_all_files() {
     done <<< "$all_files"
 
     echo "$file_count"
+    # M18 Fix: Return success (0) if at least one file downloaded, failure (1) otherwise
+    [[ $file_count -gt 0 ]]
 }
 
 # -----------------------------------------------------------------------------

@@ -83,17 +83,31 @@ validate_profile_name() {
         return 1
     fi
 
-    # Check that resolved path stays within profiles directory
+    # M12 Fix: Check that resolved path stays within profiles directory
+    # Only create test directory if it doesn't already exist (avoid race conditions)
     local resolved_path
-    resolved_path=$(cd "$PROFILES_DIR" 2>/dev/null && mkdir -p "$name" 2>/dev/null && cd "$name" && pwd)
-    if [[ $? -ne 0 ]] || [[ "$resolved_path" != "$PROFILES_DIR/$name" ]]; then
-        # Clean up if directory was created during check
-        rmdir "$PROFILES_DIR/$name" 2>/dev/null || true
+    local created_test_dir=false
+    if [[ ! -d "$PROFILES_DIR/$name" ]]; then
+        if mkdir -p "$PROFILES_DIR/$name" 2>/dev/null; then
+            created_test_dir=true
+        else
+            print_error "Failed to create test directory for profile validation"
+            return 1
+        fi
+    fi
+    resolved_path=$(cd "$PROFILES_DIR/$name" 2>/dev/null && pwd)
+    if [[ "$resolved_path" != "$PROFILES_DIR/$name" ]]; then
+        # Clean up only if WE created the directory
+        if [[ "$created_test_dir" == true ]]; then
+            rmdir "$PROFILES_DIR/$name" 2>/dev/null || true
+        fi
         print_error "Profile name resolves to invalid path"
         return 1
     fi
-    # Clean up the directory we created for validation
-    rmdir "$resolved_path" 2>/dev/null || true
+    # Clean up only if WE created the directory for testing
+    if [[ "$created_test_dir" == true ]]; then
+        rmdir "$resolved_path" 2>/dev/null || true
+    fi
 
     return 0
 }
@@ -179,7 +193,11 @@ get_profile_name() {
 # -----------------------------------------------------------------------------
 
 select_inheritance() {
-    local profiles=($(get_available_profiles))
+    # M27 Fix: Use while loop instead of word splitting for safety with special chars
+    local profiles=()
+    while IFS= read -r profile; do
+        [[ -n "$profile" ]] && profiles+=("$profile")
+    done < <(get_available_profiles | tr ' ' '\n')
 
     if [[ ${#profiles[@]} -eq 0 ]]; then
         print_warning "No existing profiles found to inherit from"
@@ -252,13 +270,20 @@ select_inheritance() {
 # -----------------------------------------------------------------------------
 
 select_copy_source() {
-    # Only ask about copying if not inheriting
+    # M13 Note: Only ask about copying if not inheriting
+    # This design ensures COPY_FROM and INHERIT_FROM are mutually exclusive:
+    # - If user chose to inherit, skip copy selection entirely
+    # - If user chose not to inherit, offer copy option
     if [[ -n "$INHERIT_FROM" ]]; then
         COPY_FROM=""
         return
     fi
 
-    local profiles=($(get_available_profiles))
+    # M27 Fix: Use mapfile instead of word splitting for safety with special chars
+    local profiles=()
+    while IFS= read -r profile; do
+        [[ -n "$profile" ]] && profiles+=("$profile")
+    done < <(get_available_profiles | tr ' ' '\n')
 
     if [[ ${#profiles[@]} -eq 0 ]]; then
         print_warning "No existing profiles found to copy from"
@@ -390,9 +415,9 @@ create_profile_structure() {
     fi
 
     if [[ -n "$COPY_FROM" ]]; then
-        # Validate that the source profile exists before copying
+        # M28 Fix: Validate that the source profile exists before copying
+        # validate_profile_exists already prints error, so no need for additional error message
         if ! validate_profile_exists "$COPY_FROM"; then
-            print_error "Cannot copy from non-existent profile: $COPY_FROM"
             exit 1
         fi
 

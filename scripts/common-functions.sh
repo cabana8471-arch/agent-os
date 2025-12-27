@@ -494,13 +494,16 @@ get_profile_file() {
     local depth=0
 
     while true; do
+        # M20 Fix: Increment depth BEFORE check for clearer semantics
+        # This ensures depth=1 at first iteration, matching human expectation of "level 1"
+        ((depth++)) || true
+
         # Check for inheritance depth limit
-        if [[ $depth -ge $MAX_PROFILE_INHERITANCE_DEPTH ]]; then
+        if [[ $depth -gt $MAX_PROFILE_INHERITANCE_DEPTH ]]; then
             print_error "Profile inheritance chain too deep (max $MAX_PROFILE_INHERITANCE_DEPTH levels)"
             print_error "This may indicate a configuration problem. Check profile-config.yml files."
             return $PROFILE_FILE_TOO_DEEP
         fi
-        ((depth++)) || true
 
         # Check for circular inheritance
         # S-L1 Note: Space-delimited string pattern safe here - profile names validated
@@ -719,6 +722,9 @@ match_pattern() {
 # -----------------------------------------------------------------------------
 
 # Replace Playwright tool with expanded tool list
+# M3 Note: Uses Bash native string replacement (${var//pattern/replacement}) which is safe for
+# special characters in the replacement string. The playwright_tools list contains only known-safe
+# characters (letters, numbers, underscores, commas, spaces). This avoids sed/regex escaping issues.
 replace_playwright_tools() {
     local tools=$1
 
@@ -1433,7 +1439,13 @@ compile_agent() {
 
     # Process role replacements if provided
     if [[ -n "$role_data" ]]; then
-        # Process each role replacement using delimiter-based format
+        # M2 Note: Process each role replacement using delimiter-based format
+        # Format: <<<KEY>>>\nvalue content\n<<<END>>>
+        # Limitation: If value content contains the literal string "<<<END>>>",
+        # parsing will terminate prematurely. This is acceptable because:
+        # 1. This pattern is unlikely in normal content
+        # 2. The delimiter syntax is internal to the compile pipeline
+        # 3. Adding escape handling would significantly complicate the parser
         local temp_role_data=$(create_temp_file)
         echo "$role_data" > "$temp_role_data"
 
@@ -2164,12 +2176,16 @@ create_standard_skill() {
     skill_content=$(echo "$skill_content" | sed "s|{{standard_name_humanized_capitalized}}|$human_name_capitalized|g")
     skill_content=$(echo "$skill_content" | sed "s|{{standard_file_path}}|$standard_file_path_with_prefix|g")
 
-    # Write SKILL.md
+    # M6 Fix: Write SKILL.md using write_file for atomic operations
     local skill_file="$skill_dir/SKILL.md"
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "$skill_file"
     else
-        echo "$skill_content" > "$skill_file"
+        # Use write_file for atomic write protection
+        if ! write_file "$skill_file" "$skill_content"; then
+            print_warning "Failed to create skill file: $skill_file"
+            return 1
+        fi
         print_verbose "Created skill: $skill_file"
     fi
 }

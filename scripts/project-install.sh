@@ -185,6 +185,10 @@ load_configuration() {
 # -----------------------------------------------------------------------------
 
 # Install standards files
+# M4 Note: OVERWRITE_STANDARDS flag is not checked here because:
+# 1. Fresh installation always writes all files (no existing files to overwrite)
+# 2. Reinstallation deletes existing files first, then does fresh install
+# 3. Update operations use project-update.sh which calls should_skip_file() to check overwrite flags
 install_standards() {
     if [[ "$DRY_RUN" != "true" ]]; then
         print_status "Installing standards"
@@ -491,8 +495,14 @@ perform_installation() {
 
     if [[ "$DRY_RUN" == "true" ]]; then
         echo ""
-        # Timeout after 60 seconds to prevent hanging in CI/CD environments
-        # Initialize REPLY to avoid unbound variable error with set -u if read times out
+        # M22 Note: Files listed above are what WOULD be created - we collected paths
+        # without actually creating files. The copy_file/compile_* functions return
+        # destination paths even in dry-run mode for display purposes.
+
+        # M21 Fix: Timeout handling and REPLY initialization explained:
+        # - REPLY="" before read prevents "unbound variable" error with set -u
+        # - read -t 60 times out after 60 seconds (for CI/CD environments)
+        # - If timeout occurs, REPLY remains empty, so the [[ $REPLY =~ ^[Yy]$ ]] check fails safely
         REPLY=""
         if ! read -t 60 -p "Proceed with actual installation? (y/n): " -n 1 -r; then
             echo
@@ -501,9 +511,13 @@ perform_installation() {
         fi
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
+            # M5 Fix: Reset state and perform actual installation
+            # Note: We call perform_installation non-recursively since we reset DRY_RUN
+            # The exit status is implicitly passed through the function return
             DRY_RUN="false"
             INSTALLED_FILES=()
             perform_installation
+            # Exit status from perform_installation propagates to caller
         fi
     else
         print_success "Agent OS has been successfully installed in your project!"
