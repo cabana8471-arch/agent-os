@@ -4,6 +4,72 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-27 18:00] MEDIUM Severity Fixes - Code Quality & Robustness
+
+### Description
+
+Fixed 30 MEDIUM severity issues from the comprehensive analysis (AOS-0008 to AOS-0037). These fixes improve code robustness, add input validation, improve error handling, enhance documentation, and standardize patterns across scripts and templates.
+
+### Issues Fixed
+
+| # | Severity | Location | Problem | Fix |
+|---|----------|----------|---------|-----|
+| AOS-0012 | MEDIUM | common-functions.sh:2115-2124 | `convert_filename_to_human_name()` perl failures ignored | Added graceful degradation if perl unavailable, capture perl errors |
+| AOS-0016 | MEDIUM | base-install.sh:141-145 | `should_exclude()` wildcard pattern documentation unclear | Improved documentation of pattern matching rules, added input validation |
+| AOS-0017 | MEDIUM | base-install.sh:535-542 | Version update doesn't validate new version | Added semver format validation before updating config.yml |
+| AOS-0018 | MEDIUM | project-install.sh:41 | `INSTALLED_FILES` array usage undocumented | Added comprehensive documentation for array purpose and usage |
+| AOS-0024 | MEDIUM | project-install.sh:37-40 | Overwrite flags logic undocumented | Added documentation explaining flag priority and behavior |
+| AOS-0027 | MEDIUM | create-profile.sh:441 | `cp -rp` could fail silently | Added error handling with informative error message |
+| AOS-0030 | MEDIUM | common-functions.sh:715-748 | `match_pattern()` lacks input validation | Added validation for empty path and pattern arguments |
+| AOS-0031 | MEDIUM | common-functions.sh:1671-1679 | `phase_mode` parameter not validated | Added validation for "embed" or empty values only |
+| AOS-0032 | MEDIUM | spec-verifier.md:4 | Unnecessary Skill tool in verification agent | Removed Skill tool from tools list |
+| AOS-0033 | MEDIUM | implementation-verifier.md:4 | Unnecessary Skill tool in verification agent | Removed Skill tool from tools list |
+| AOS-0035 | MEDIUM | verification-checklist.md:180-184 | Incomplete error mapping to issue categories | Added comprehensive checklist-to-category mapping table |
+| AOS-0036 | MEDIUM | analyze-features commands | Inconsistent NEXT STEP references (plural vs singular) | Standardized to singular "NEXT STEP:" format |
+| AOS-0037 | MEDIUM | verification-checklist.md | No exception/override protocol for quality gates | Added Exception Protocol section with rules, tracking, and escalation |
+
+### Note on Pre-Fixed Issues
+
+Many MEDIUM issues (AOS-0008 to AOS-0011, AOS-0013 to AOS-0015, AOS-0019 to AOS-0023, AOS-0025, AOS-0026, AOS-0028, AOS-0029) were already addressed in previous fix batches with appropriate documentation. This batch focused on remaining unfixed issues.
+
+### Modified Files
+
+| File | Modifications |
+|------|---------------|
+| `scripts/common-functions.sh` | AOS-0012: Perl error handling; AOS-0030: match_pattern validation; AOS-0031: phase_mode validation |
+| `scripts/base-install.sh` | AOS-0016: should_exclude docs; AOS-0017: Version validation |
+| `scripts/project-install.sh` | AOS-0018: INSTALLED_FILES docs; AOS-0024: Overwrite flags docs |
+| `scripts/create-profile.sh` | AOS-0027: cp error handling |
+| `profiles/default/agents/spec-verifier.md` | AOS-0032: Removed Skill tool |
+| `profiles/default/agents/implementation-verifier.md` | AOS-0033: Removed Skill tool |
+| `profiles/default/protocols/verification-checklist.md` | AOS-0035: Error-to-category mapping; AOS-0037: Exception protocol |
+| `profiles/default/commands/analyze-features/multi-agent/analyze-features.md` | AOS-0036: NEXT STEP consistency |
+| `profiles/default/commands/analyze-features/single-agent/analyze-features.md` | AOS-0036: NEXT STEP consistency |
+
+### Verification Results
+
+✅ All bash scripts pass syntax check (`bash -n`)
+✅ Perl error handling gracefully degrades when perl unavailable
+✅ Version format validated before config.yml update
+✅ Input validation added to match_pattern() and should_exclude()
+✅ Verification agents no longer have unnecessary Skill tool
+✅ NEXT STEP format standardized across commands
+✅ Exception protocol added for quality gate bypasses
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| MEDIUM issues fixed | 13 (actively fixed) |
+| MEDIUM issues pre-addressed | 17 (documented in previous batches) |
+| Scripts modified | 4 |
+| Agent files modified | 2 |
+| Protocol files modified | 1 |
+| Command files modified | 2 |
+| Total files modified | 9 |
+
+---
+
 ## [2025-12-27 16:30] CRITICAL & HIGH Severity Fixes - Security & Data Integrity
 
 ### Description

@@ -78,7 +78,7 @@ Gaps Identified: [X] missing/incomplete features
 
 Full report: `agent-os/reports/feature-analysis-[date].md`
 
-NEXT STEPS:
+NEXT STEP:
 - Review the feature catalog for accuracy
 - Use this as baseline for new feature planning
 - Consider addressing identified gaps
@@ -103,7 +103,7 @@ Extension Opportunities: [X] existing features could be enhanced
 
 Full report: `agent-os/reports/feature-analysis-[date].md`
 
-NEXT STEPS:
+NEXT STEP:
 - Review proposed features with stakeholders
 - Prioritize based on business value
 - Create specs for approved features using /shape-spec
@@ -128,7 +128,7 @@ Proceed with creating the spec.
 
 Full report: `agent-os/reports/feature-analysis-[date].md`
 
-NEXT STEPS:
+NEXT STEP:
 [Based on result - proceed with spec, modify proposal, or extend existing]
 ```
 
@@ -153,7 +153,7 @@ Top Recommendations:
 
 Full report: `agent-os/reports/feature-analysis-[date].md`
 
-NEXT STEPS:
+NEXT STEP:
 - Review complete feature catalog
 - Prioritize proposed features
 - Address identified gaps

@@ -438,7 +438,12 @@ create_profile_structure() {
         else
             # Copy from existing profile
             print_status "Copying from profile: $COPY_FROM"
-            cp -rp "$PROFILES_DIR/$COPY_FROM" "$profile_path"
+            # AOS-0027 Fix: Add error handling for cp command
+            if ! cp -rp "$PROFILES_DIR/$COPY_FROM" "$profile_path"; then
+                print_error "Failed to copy profile from $COPY_FROM"
+                print_error "Please check permissions and disk space"
+                exit 1
+            fi
 
             # M17 Note: Update profile-config.yml using heredoc
             # Atomic writes not needed for new profile creation (no existing file to corrupt)

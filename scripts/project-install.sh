@@ -27,6 +27,7 @@ source "$SCRIPT_DIR/common-functions.sh"
 
 DRY_RUN="false"
 VERBOSE="false"
+# Command line flag values (empty = use config.yml defaults)
 PROFILE=""
 CLAUDE_CODE_COMMANDS=""
 USE_CLAUDE_CODE_SUBAGENTS=""
@@ -34,10 +35,25 @@ AGENT_OS_COMMANDS=""
 STANDARDS_AS_CLAUDE_CODE_SKILLS=""
 LAZY_LOAD_WORKFLOWS=""
 RE_INSTALL="false"
+
+# AOS-0024 Fix: Overwrite flags documentation
+# These flags control whether existing files are overwritten during installation:
+# - OVERWRITE_ALL: If true, all file types are overwritten (standards, commands, agents)
+# - OVERWRITE_STANDARDS: If true, only standards/* files are overwritten
+# - OVERWRITE_COMMANDS: If true, only commands/* files are overwritten
+# - OVERWRITE_AGENTS: If true, only agents/* files are overwritten
+# Priority: OVERWRITE_ALL takes precedence over individual flags
+# Usage: Pass to should_skip_file() which returns 0 (skip) or 1 (don't skip/overwrite)
 OVERWRITE_ALL="false"
 OVERWRITE_STANDARDS="false"
 OVERWRITE_COMMANDS="false"
 OVERWRITE_AGENTS="false"
+
+# AOS-0018 Fix: INSTALLED_FILES array documentation
+# Tracks all files installed during this session for summary reporting
+# Used in both regular install and dry-run mode to show what would be installed
+# Populated by: install_standards(), install_claude_code_commands_*(), install_agents(), etc.
+# Note: In dry-run mode, contains paths that WOULD be created; actual files not written
 INSTALLED_FILES=()
 
 # -----------------------------------------------------------------------------

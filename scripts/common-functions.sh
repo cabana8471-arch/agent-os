@@ -712,9 +712,20 @@ get_profile_files() {
 #   2. Convert ? to . (single char match)
 #   3. Convert ** to placeholder, then * to [^/]*, then placeholder to .*
 # This ensures patterns like "*.md" work correctly
+# AOS-0030 Fix: Added input validation for empty arguments
 match_pattern() {
     local path=$1
     local pattern=$2
+
+    # AOS-0030 Fix: Handle empty arguments gracefully
+    # Empty path never matches any pattern
+    if [[ -z "$path" ]]; then
+        return 1
+    fi
+    # Empty pattern never matches anything
+    if [[ -z "$pattern" ]]; then
+        return 1
+    fi
 
     # Escape special regex characters except * and ?
     # Order matters: escape backslash first, then other metacharacters
@@ -1668,12 +1679,20 @@ compile_agent() {
 }
 
 # Compile command file with all replacements
+# AOS-0031 Fix: Added phase_mode parameter validation
 compile_command() {
     local source_file=$1
     local dest_file=$2
     local base_dir=$3
     local profile=$4
     local phase_mode=${5:-""}  # Optional: "embed" to embed PHASE content, or empty for no processing
+
+    # AOS-0031 Fix: Validate phase_mode parameter (only "embed" or empty allowed)
+    if [[ -n "$phase_mode" ]] && [[ "$phase_mode" != "embed" ]]; then
+        print_warning "compile_command: invalid phase_mode '$phase_mode' (expected 'embed' or empty)"
+        print_verbose "Ignoring invalid phase_mode and proceeding without PHASE embedding"
+        phase_mode=""
+    fi
 
     compile_agent "$source_file" "$dest_file" "$base_dir" "$profile" "" "$phase_mode"
 }
@@ -2095,6 +2114,7 @@ lazy_load_workflows: $lazy_load_workflows"
 # Example: "api-design.md" -> "API design"
 #          "frontend/css.md" -> "frontend CSS"
 #          "rest-api-conventions.md" -> "REST API conventions"
+# AOS-0012 Fix: Graceful degradation if perl not available - returns lowercase without acronym handling
 convert_filename_to_human_name() {
     local filename=$1
 
@@ -2110,6 +2130,13 @@ convert_filename_to_human_name() {
     # Convert to lowercase first
     name=$(echo "$name" | tr '[:upper:]' '[:lower:]')
 
+    # AOS-0012 Fix: Check if perl is available before attempting acronym replacement
+    if ! command -v perl &> /dev/null; then
+        print_verbose "perl not available - skipping acronym replacement in convert_filename_to_human_name"
+        echo "$name"
+        return 0
+    fi
+
     # Replace known acronyms with uppercase version
     # Match all case variations: lowercase, Capitalized, UPPERCASE
     for acronym in "${acronyms[@]}"; do
@@ -2118,9 +2145,17 @@ convert_filename_to_human_name() {
 
         # Replace all variations with the uppercase acronym
         # Use Perl for portable word boundary matching (\b works consistently across platforms)
-        name=$(echo "$name" | perl -pe "s/\\b$lowercase\\b/$acronym/g")
-        name=$(echo "$name" | perl -pe "s/\\b$capitalized\\b/$acronym/g")
-        name=$(echo "$name" | perl -pe "s/\\b$acronym\\b/$acronym/g")
+        # AOS-0012 Fix: Capture perl errors and continue gracefully
+        local result
+        if result=$(echo "$name" | perl -pe "s/\\b$lowercase\\b/$acronym/g" 2>/dev/null); then
+            name="$result"
+        fi
+        if result=$(echo "$name" | perl -pe "s/\\b$capitalized\\b/$acronym/g" 2>/dev/null); then
+            name="$result"
+        fi
+        if result=$(echo "$name" | perl -pe "s/\\b$acronym\\b/$acronym/g" 2>/dev/null); then
+            name="$result"
+        fi
     done
 
     echo "$name"
@@ -2131,6 +2166,7 @@ convert_filename_to_human_name() {
 # Example: "api-design.md" -> "API Design"
 #          "frontend/css.md" -> "Frontend CSS"
 #          "rest-api-conventions.md" -> "REST API Conventions"
+# AOS-0012 Fix: Graceful degradation if perl not available - returns title case without acronym handling
 convert_filename_to_human_name_capitalized() {
     local filename=$1
 
@@ -2146,6 +2182,13 @@ convert_filename_to_human_name_capitalized() {
     # Capitalize first letter of each word
     name=$(echo "$name" | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
 
+    # AOS-0012 Fix: Check if perl is available before attempting acronym replacement
+    if ! command -v perl &> /dev/null; then
+        print_verbose "perl not available - skipping acronym replacement in convert_filename_to_human_name_capitalized"
+        echo "$name"
+        return 0
+    fi
+
     # Replace known acronyms with uppercase version
     # Match all case variations: lowercase, Capitalized, UPPERCASE
     for acronym in "${acronyms[@]}"; do
@@ -2154,9 +2197,17 @@ convert_filename_to_human_name_capitalized() {
 
         # Replace all variations with the uppercase acronym
         # Use Perl for portable word boundary matching (\b works consistently across platforms)
-        name=$(echo "$name" | perl -pe "s/\\b$lowercase\\b/$acronym/g")
-        name=$(echo "$name" | perl -pe "s/\\b$capitalized\\b/$acronym/g")
-        name=$(echo "$name" | perl -pe "s/\\b$acronym\\b/$acronym/g")
+        # AOS-0012 Fix: Capture perl errors and continue gracefully
+        local result
+        if result=$(echo "$name" | perl -pe "s/\\b$lowercase\\b/$acronym/g" 2>/dev/null); then
+            name="$result"
+        fi
+        if result=$(echo "$name" | perl -pe "s/\\b$capitalized\\b/$acronym/g" 2>/dev/null); then
+            name="$result"
+        fi
+        if result=$(echo "$name" | perl -pe "s/\\b$acronym\\b/$acronym/g" 2>/dev/null); then
+            name="$result"
+        fi
     done
     echo "$name"
 }

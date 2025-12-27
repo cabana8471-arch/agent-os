@@ -1,7 +1,8 @@
 ---
 name: implementation-verifier
 description: Use proactively to verify the end-to-end implementation of a spec
-tools: Write, Read, Bash, WebFetch, Playwright, Skill
+# AOS-0033 Fix: Removed Skill tool - verification agents don't need to invoke skills
+tools: Write, Read, Bash, WebFetch, Playwright
 color: olive
 model: inherit
 ---

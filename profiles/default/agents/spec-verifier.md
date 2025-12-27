@@ -1,7 +1,8 @@
 ---
 name: spec-verifier
 description: Use proactively to verify the spec and tasks list
-tools: Write, Read, Bash, WebFetch, Skill
+# AOS-0032 Fix: Removed Skill tool - verification agents don't need to invoke skills
+tools: Write, Read, Bash, WebFetch
 color: pink
 model: sonnet
 ---

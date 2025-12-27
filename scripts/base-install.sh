@@ -129,16 +129,28 @@ EXCLUSIONS=(
 # Args: $1=file path to check
 # Returns: 0 if file should be excluded, 1 otherwise
 # Supports exact match and wildcard (*) patterns
+# AOS-0016 Fix: Improved documentation of wildcard matching behavior
+# Pattern matching rules:
+#   - Exact: "scripts/base-install.sh" matches only that file
+#   - Prefix wildcard: "old-versions/*" matches any file starting with "old-versions/"
+#   - Suffix wildcard: ".git*" matches .git, .github, .gitignore etc.
+# Note: Only * at the END of a pattern is treated as a wildcard (prefix matching)
+# For suffix wildcards like ".git*", the * must be at the end to match
 should_exclude() {
     local file_path=$1
+
+    # AOS-0016 Fix: Input validation - empty path never excluded
+    if [[ -z "$file_path" ]]; then
+        return 1
+    fi
 
     for pattern in "${EXCLUSIONS[@]}"; do
         # Check exact match
         if [[ "$file_path" == "$pattern" ]]; then
             return 0
         fi
-        # Check wildcard patterns
-        if [[ "$pattern" == *"*"* ]]; then
+        # Check wildcard patterns (only trailing * supported for prefix matching)
+        if [[ "$pattern" == *"*" ]]; then
             local prefix="${pattern%\*}"
             if [[ "$file_path" == "$prefix"* ]]; then
                 return 0
@@ -576,12 +588,18 @@ full_update() {
     # Update version number in config.yml (without overwriting the entire file)
     print_status "Updating version number in config.yml..."
     if [[ -f "$BASE_DIR/config.yml" ]] && [[ -n "$latest_version" ]]; then
-        # Use sed to update only the version line
-        # Note: sed -i.bak creates backup for macOS compatibility (BSD sed requires suffix)
-        # We immediately remove the backup since we have ~/agent-os.backup
-        sed -i.bak "s/^version:.*/version: $latest_version/" "$BASE_DIR/config.yml"
-        rm -f "$BASE_DIR/config.yml.bak"  # Clean up sed backup file
-        echo "✓ Updated version to $latest_version in config.yml"
+        # AOS-0017 Fix: Validate version format before updating (semver pattern)
+        if [[ ! "$latest_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            print_warning "Invalid version format: $latest_version (expected semver like 1.2.3)"
+            print_warning "Skipping version update - config.yml unchanged"
+        else
+            # Use sed to update only the version line
+            # Note: sed -i.bak creates backup for macOS compatibility (BSD sed requires suffix)
+            # We immediately remove the backup since we have ~/agent-os.backup
+            sed -i.bak "s/^version:.*/version: $latest_version/" "$BASE_DIR/config.yml"
+            rm -f "$BASE_DIR/config.yml.bak"  # Clean up sed backup file
+            echo "✓ Updated version to $latest_version in config.yml"
+        fi
     fi
     echo ""
 

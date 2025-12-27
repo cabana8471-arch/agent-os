@@ -183,6 +183,36 @@ When a checklist fails:
 3. **Block Progression**: Do not proceed until CRITICAL items pass
 4. **Track Resolution**: Update checklist as items are resolved
 
+### AOS-0035 Fix: Error-to-Category Mapping
+
+When a checklist item fails, assign the appropriate Issue ID category:
+
+| Checklist Section | Primary Category | Secondary Category |
+|-------------------|------------------|-------------------|
+| Spec Completeness | QUAL | ARCH |
+| Tasks List | QUAL | GAP |
+| Core Completion (build/tests) | BUG | TEST |
+| Quality Assurance | QUAL | BUG |
+| Security Verification | SEC | - |
+| Documentation & Cleanup | DOC | QUAL |
+| Standards Compliance | QUAL | ARCH |
+| Code Review - Security | SEC | - |
+| Code Review - Quality | QUAL | BUG |
+| Code Review - Performance | PERF | - |
+| Code Review - Maintainability | QUAL | ARCH |
+| Test Coverage | TEST | GAP |
+| Final Verification | QUAL | - |
+
+**Category Definitions (see `{{protocols/issue-tracking}}` for full list):**
+- SEC: Security vulnerabilities
+- BUG: Code defects and bugs
+- PERF: Performance issues
+- QUAL: Code quality concerns
+- DOC: Documentation gaps
+- TEST: Test-related issues
+- ARCH: Architectural concerns
+- GAP: Missing functionality
+
 ---
 
 ## Quality Gate Thresholds
@@ -205,3 +235,67 @@ When a checklist fails:
 3. **Verify Early**: Run checklists frequently, not just at the end
 4. **Be Honest**: A failed checklist now prevents bigger problems later
 5. **Update Checklists**: Add project-specific items as needed
+
+---
+
+## AOS-0037: Exception Protocol for Quality Gates
+
+In rare circumstances, quality gates may need to be bypassed. This section defines the rules for doing so safely.
+
+### When Exceptions Are Allowed
+
+Exceptions to quality gates are ONLY permitted when:
+1. **Time-Critical Fixes**: Production is down and immediate hotfix is needed
+2. **Non-Applicable Items**: Checklist item doesn't apply to this change type
+3. **Deferred Resolution**: Issue is documented and will be fixed in follow-up
+
+### Exception Requirements
+
+To bypass a quality gate item, you MUST:
+
+1. **Document the Exception**:
+   ```markdown
+   ## Quality Gate Exception
+
+   - **Item Bypassed**: [checklist item]
+   - **Reason**: [why exception is needed]
+   - **Risk Assessment**: [what could go wrong]
+   - **Mitigation**: [how risk is managed]
+   - **Follow-up Issue**: [issue ID if deferred]
+   - **Approved By**: [stakeholder/reviewer]
+   ```
+
+2. **Create Follow-up Issue** (if deferring):
+   - Use Issue Tracking Protocol (`{{protocols/issue-tracking}}`)
+   - Assign severity based on bypassed item
+   - Add to next sprint/iteration
+
+3. **Limit Scope**:
+   - NEVER bypass Security (SEC) items without explicit approval
+   - NEVER bypass multiple CRITICAL items in same change
+   - Prefer partial deployments over complete gate bypass
+
+### Items That Cannot Be Bypassed
+
+| Category | Items | Reason |
+|----------|-------|--------|
+| Security | All SEC-prefixed items | Risk of vulnerability |
+| Data Safety | Database migrations, data validation | Risk of data loss |
+| Authentication | Auth/permission checks | Risk of unauthorized access |
+
+### Tracking Exceptions
+
+Maintain an exception log in `agent-os/product/exceptions.md`:
+
+```markdown
+| Date | Item Bypassed | Reason | Follow-up Issue | Resolved |
+|------|---------------|--------|-----------------|----------|
+| 2024-01-15 | Test Coverage 80% | Hotfix | TEST-042 | ✅ |
+```
+
+### Escalation Path
+
+1. **Developer**: Can bypass LOW severity items with documentation
+2. **Tech Lead**: Can approve MEDIUM severity bypasses
+3. **Security Team**: Must approve any SEC-related bypasses
+4. **Management**: Required for multiple CRITICAL bypasses
