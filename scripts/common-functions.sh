@@ -488,7 +488,6 @@ get_profile_file() {
         if [[ $depth -ge $MAX_PROFILE_INHERITANCE_DEPTH ]]; then
             print_error "Profile inheritance chain too deep (max $MAX_PROFILE_INHERITANCE_DEPTH levels)"
             print_error "This may indicate a configuration problem. Check profile-config.yml files."
-            echo ""
             return $PROFILE_FILE_TOO_DEEP
         fi
         ((depth++)) || true
@@ -496,7 +495,6 @@ get_profile_file() {
         # Check for circular inheritance
         if [[ " $visited_profiles " == *" $current_profile "* ]]; then
             print_warning "Circular inheritance detected at profile: $current_profile"
-            echo ""
             return $PROFILE_FILE_CIRCULAR_REF
         fi
         visited_profiles="$visited_profiles $current_profile"
@@ -631,14 +629,16 @@ get_profile_files() {
             while IFS= read -r file; do
                 local relative_path="${file#$profile_dir/}"
 
-                # Check if excluded
+                # Check if excluded (skip loop if no patterns to check)
                 local excluded="false"
-                while IFS= read -r pattern; do
-                    if [[ -n "$pattern" ]] && match_pattern "$relative_path" "$pattern"; then
-                        excluded="true"
-                        break
-                    fi
-                done <<< "$excluded_patterns"
+                if [[ -n "$excluded_patterns" ]]; then
+                    while IFS= read -r pattern; do
+                        if [[ -n "$pattern" ]] && match_pattern "$relative_path" "$pattern"; then
+                            excluded="true"
+                            break
+                        fi
+                    done <<< "$excluded_patterns"
+                fi
 
                 if [[ "$excluded" != "true" ]]; then
                     # Check if already in list (override scenario)

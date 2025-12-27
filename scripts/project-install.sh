@@ -324,7 +324,7 @@ install_claude_code_agents() {
                 # Get just the filename (flatten directory structure)
                 local filename=$(basename "$file")
                 local dest="$target_dir/$filename"
-                
+
                 # Compile with workflow and standards injection
                 local compiled=$(compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
                 if [[ "$DRY_RUN" == "true" ]]; then
@@ -395,8 +395,12 @@ create_agent_os_folder() {
         "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" \
         "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" \
         "$EFFECTIVE_LAZY_LOAD_WORKFLOWS")
+    # Track config file consistently (in dry-run, write_project_config returns dest path)
     if [[ "$DRY_RUN" == "true" && -n "$config_file" ]]; then
         INSTALLED_FILES+=("$config_file")
+    elif [[ "$DRY_RUN" != "true" ]]; then
+        # In non-dry-run mode, track the expected config path for consistency
+        INSTALLED_FILES+=("$PROJECT_DIR/agent-os/config.yml")
     fi
 
     if [[ "$DRY_RUN" != "true" ]]; then

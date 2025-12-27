@@ -121,6 +121,12 @@ validate_profile_exists() {
 get_available_profiles() {
     local profiles=()
 
+    # Check if profiles directory exists
+    if [[ ! -d "$PROFILES_DIR" ]]; then
+        print_error "Profiles directory not found: $PROFILES_DIR"
+        return 1
+    fi
+
     # Find all directories in profiles/
     for dir in "$PROFILES_DIR"/*; do
         if [[ -d "$dir" ]]; then
