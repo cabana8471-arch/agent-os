@@ -23,6 +23,12 @@ IMPORTANT: Ensure rollback procedures follow the user's conventions and patterns
 {{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
 
+## Output Protocol
+
+Follow the output protocol for context optimization:
+
+{{protocols/output-protocol}}
+
 ## Output Summary
 
 After completing the rollback, display:

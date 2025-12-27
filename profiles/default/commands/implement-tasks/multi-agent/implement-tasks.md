@@ -31,18 +31,41 @@ If not, then please specify which task(s) to implement.
 
 Delegate to the **implementer** subagent to implement the specified task group(s):
 
-Provide to the subagent:
-- The specific task group(s) from `agent-os/specs/[spec-path]/tasks.md` including the parent task, all sub-tasks, and any sub-bullet points
-- The path to this spec's documentation: `agent-os/specs/[spec-path]/spec.md`
-- The path to this spec's requirements: `agent-os/specs/[spec-path]/planning/requirements.md`
-- The path to this spec's visuals (if any): `agent-os/specs/[spec-path]/planning/visuals`
+**Context to provide to the subagent:**
+
+| Context Item | Path | Purpose |
+|--------------|------|---------|
+| Task group(s) | `agent-os/specs/[spec-path]/tasks.md` | The parent task, all sub-tasks, and sub-bullet points to implement |
+| Spec document | `agent-os/specs/[spec-path]/spec.md` | Full specification with requirements and acceptance criteria |
+| Requirements | `agent-os/specs/[spec-path]/planning/requirements.md` | Detailed functional requirements |
+| Visual assets | `agent-os/specs/[spec-path]/planning/visuals/` | UI mockups, diagrams, screenshots (if any) |
+| Tech stack | `agent-os/product/tech-stack.md` | Project technology choices and patterns (if exists) |
+
+**Subagent instructions:**
 
 Instruct the subagent to:
-1. Analyze the provided spec.md, requirements.md, and visuals (if any)
-2. Analyze patterns in the codebase according to its built-in workflow
-3. Implement the assigned task group according to requirements and standards
-4. Update `agent-os/specs/[spec-path]/tasks.md` to mark completed tasks with `- [x]`
-5. Return a list of files created or modified during implementation
+1. **Read all context files** - Analyze spec.md, requirements.md, and visuals before coding
+2. **Analyze codebase patterns** - Scan existing code for conventions, naming, and architecture
+3. **Implement tasks sequentially** - Complete each sub-task according to spec requirements
+4. **Follow project standards** - Adhere to coding style, security, and performance standards
+5. **Update tasks.md** - Mark completed tasks with `- [x]` checkboxes
+6. **Return implementation summary** - List all files created/modified with brief descriptions
+
+**Subagent expected output format:**
+
+```
+Implementation complete for [task group name].
+
+Files created:
+- src/components/Feature.tsx - Main feature component
+- src/hooks/useFeature.ts - Feature logic hook
+
+Files modified:
+- src/App.tsx - Added feature route
+- src/types/index.ts - Added new types
+
+Tasks completed: 5/5
+```
 
 ### PHASE 3: Code Review
 

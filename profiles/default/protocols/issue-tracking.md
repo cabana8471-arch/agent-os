@@ -42,6 +42,32 @@ All issues MUST have a unique identifier following this format:
 | 3 | MEDIUM | Functionality degraded | Next sprint |
 | 4 | LOW | Minor issues, nice to have | Backlog |
 
+### Severity Examples
+
+**CRITICAL (Level 1):**
+- SQL injection vulnerability allowing database access
+- Authentication bypass exposing user data
+- Unencrypted storage of passwords or API keys
+- Production data loss or corruption
+
+**HIGH (Level 2):**
+- Core feature completely non-functional
+- Security issue requiring user action to exploit
+- Data integrity issues affecting multiple users
+- Performance degradation causing timeouts
+
+**MEDIUM (Level 3):**
+- Feature works but with significant limitations
+- UI/UX issues affecting user workflow
+- Code quality issues increasing maintenance burden
+- Missing input validation on non-critical fields
+
+**LOW (Level 4):**
+- Minor cosmetic issues
+- Code style inconsistencies
+- Missing optional documentation
+- Performance optimizations for edge cases
+
 ## Issue Documentation Format
 
 When documenting an issue, use this format:

@@ -50,14 +50,33 @@ Before marking implementation complete:
 ```markdown
 ## Implementation Checklist
 
-- [ ] **All Tasks Complete**: Every task checkbox is marked
+### Core Completion
+- [ ] **All Tasks Complete**: Every task checkbox is marked in tasks.md
 - [ ] **Code Compiles**: No build/compilation errors
 - [ ] **Tests Pass**: All existing tests still pass
+- [ ] **Linter Passes**: No linting errors or warnings
+
+### Quality Assurance
 - [ ] **New Tests Added**: New functionality has test coverage
+- [ ] **Edge Cases Handled**: Error states and boundary conditions implemented
+- [ ] **Input Validation**: All user inputs properly validated
+- [ ] **Error Messages**: User-friendly error messages for failures
+
+### Security Verification
+- [ ] **No Hardcoded Secrets**: No API keys, passwords, or tokens in code
+- [ ] **Authentication Checked**: Protected routes/actions require auth
+- [ ] **Authorization Verified**: Permission checks in place
+
+### Documentation & Cleanup
 - [ ] **Documentation Updated**: README/docs reflect changes
 - [ ] **No Console Errors**: Browser/runtime logs clean
-- [ ] **Edge Cases Handled**: Error states implemented
+- [ ] **Debug Code Removed**: No console.log, print statements, or debug flags
+- [ ] **Unused Code Removed**: No commented-out or dead code
+
+### Standards Compliance
 - [ ] **Code Reviewed**: Self-review completed or peer review done
+- [ ] **Naming Conventions**: Variables, functions, files follow project standards
+- [ ] **File Organization**: New files placed in correct directories
 ```
 
 ### 4. Code Review Verification Checklist

@@ -73,6 +73,12 @@ For more best practices, refer to the official Claude Code documentation on Skil
 https://docs.claude.com/en/docs/claude-code/skills
 ```
 
+## Output Protocol
+
+Follow the output protocol for context optimization:
+
+{{protocols/output-protocol}}
+
 ## Error Recovery
 
 If any phase fails:
