@@ -17,11 +17,18 @@ COMMON_FUNCTIONS_TEMP="$TEMP_DIR/common-functions.sh"
 # Bootstrap Functions (before common-functions.sh is available)
 # -----------------------------------------------------------------------------
 
-# Minimal color codes for bootstrap
-BLUE='\033[0;36m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# S-L3 Fix: Minimal color codes for bootstrap (only if terminal supports colors)
+if [[ -t 1 ]] && [[ "${TERM:-dumb}" != "dumb" ]]; then
+    BLUE='\033[0;36m'
+    RED='\033[0;31m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+else
+    BLUE=''
+    RED=''
+    YELLOW=''
+    NC=''
+fi
 
 # Bootstrap print functions
 bootstrap_print() {
@@ -182,6 +189,8 @@ for item in data.get('tree', []):
             fi
         done
     else
+        # S-M12 Fix: Show warning when using less reliable fallback parser
+        print_warning "Neither jq nor python3 available. Using awk fallback (less reliable)."
         print_verbose "Using sed/awk to parse JSON (less reliable)"
         # Parse JSON using sed and awk - less reliable but works for simple cases
         echo "$response" | awk -F'"' '/"type":"blob"/{blob=1} blob && /"path":/{print $4; blob=0}' | while read -r file_path; do

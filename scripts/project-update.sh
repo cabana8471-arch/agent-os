@@ -363,7 +363,8 @@ update_claude_code_files() {
 
     # Update commands in .claude/commands/agent-os/
     # Determine which command mode to use based on subagents setting
-    if [[ "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" == "true" ]]; then
+    # S-M5 Fix: Use default pattern to handle potentially unset variable
+    if [[ "${PROJECT_USE_CLAUDE_CODE_SUBAGENTS:-false}" == "true" ]]; then
         # Process multi-agent command files
         while read file; do
             if [[ "$file" == commands/*/multi-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
@@ -587,8 +588,9 @@ perform_update() {
     echo ""
 
     # Update Claude Code files if enabled
-    if [[ "$PROJECT_CLAUDE_CODE_COMMANDS" == "true" ]]; then
-        if [[ "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" == "true" ]]; then
+    if [[ "${PROJECT_CLAUDE_CODE_COMMANDS:-false}" == "true" ]]; then
+        # S-M5 Fix: Use default pattern for potentially unset variable
+        if [[ "${PROJECT_USE_CLAUDE_CODE_SUBAGENTS:-false}" == "true" ]]; then
             update_claude_code_files
             echo ""
         else

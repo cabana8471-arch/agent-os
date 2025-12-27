@@ -515,12 +515,25 @@ perform_installation() {
 
 # Global variable to track backup directory for cleanup on success
 _REINSTALL_BACKUP_DIR=""
+# S-H5 Fix: Track if reinstall completed successfully to determine cleanup action
+_REINSTALL_SUCCESS="false"
 
 # Remove backup directory after successful reinstallation
 cleanup_reinstall_backup() {
     if [[ -n "$_REINSTALL_BACKUP_DIR" ]] && [[ -d "$_REINSTALL_BACKUP_DIR" ]]; then
         rm -rf "$_REINSTALL_BACKUP_DIR"
         print_verbose "Removed backup directory: $_REINSTALL_BACKUP_DIR"
+    fi
+}
+
+# S-H5 Fix: Combined cleanup handler for EXIT trap
+cleanup_reinstall_on_exit() {
+    if [[ "$_REINSTALL_SUCCESS" == "true" ]]; then
+        # Success: just remove backup
+        cleanup_reinstall_backup
+    elif [[ -n "$_REINSTALL_BACKUP_DIR" ]] && [[ -d "$_REINSTALL_BACKUP_DIR" ]]; then
+        # Failure/interrupt: rollback and cleanup
+        rollback_reinstall_from_backup
     fi
 }
 
@@ -593,8 +606,9 @@ handle_reinstallation() {
             print_error "Failed to create backup directory"
             exit 1
         }
-        # Set up trap immediately after backup creation to ensure cleanup on any failure
-        trap 'rollback_reinstall_from_backup' ERR
+        # S-H5 Fix: Set up EXIT trap for cleanup on both success and failure/interrupt
+        # This replaces ERR trap for more comprehensive handling
+        trap 'cleanup_reinstall_on_exit' EXIT
         print_verbose "Created backup directory: $_REINSTALL_BACKUP_DIR"
 
         # Backup existing directories before deletion
@@ -655,10 +669,10 @@ handle_reinstallation() {
 
     perform_installation
 
-    # Reinstallation successful - remove backup and disable rollback trap
+    # S-H5 Fix: Mark reinstallation successful - EXIT trap will handle cleanup
     if [[ "$DRY_RUN" != "true" ]]; then
-        trap - ERR
-        cleanup_reinstall_backup
+        _REINSTALL_SUCCESS="true"
+        # Note: cleanup_reinstall_on_exit will be called by EXIT trap
     fi
 }
 

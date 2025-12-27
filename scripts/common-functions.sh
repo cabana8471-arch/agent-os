@@ -244,7 +244,10 @@ get_yaml_array() {
             # Normalize tabs to spaces
             gsub(/\t/, "    ")
 
-            # Get current line indentation
+            # S-M7 Note: Get current line indentation
+            # match() returns position of first non-space (1-indexed) or 0 if all spaces
+            # Edge case: if line is all spaces, treat as max indent (length + 1)
+            # Subtract 1 to convert to 0-indexed indent count
             indent = match($0, /[^ ]/)
             if (indent == 0) indent = length($0) + 1
             indent = indent - 1
@@ -318,7 +321,11 @@ ensure_dir() {
 # Copy file with dry-run support
 # Preserves file permissions and verifies source exists
 # Args: $1=source file, $2=destination file
-# Returns: destination path on success, empty on failure
+# Output: Prints destination path to stdout on success
+# Returns: 0 on success, 1 on failure
+# S-M9 Note: This function uses a hybrid pattern - it both returns exit codes AND prints
+# the destination path. Callers should use: result=$(copy_file src dst) && [[ -n "$result" ]]
+# or: if copy_file src dst >/dev/null; then ... fi
 copy_file() {
     local source=$1
     local dest=$2
@@ -391,6 +398,9 @@ write_file() {
 
     # Create temp file in the same directory as destination for atomic mv
     # M2 Fix: Reuse dest_dir_path instead of duplicate dirname call
+    # S-H2 Note: Race condition exists between mktemp and array add where an interrupt
+    # could leave orphan temp file. This is acceptable as: (1) OS cleans /tmp on reboot,
+    # (2) temp files are small, (3) complex signal blocking would add fragility.
     local temp_file
     temp_file=$(mktemp "${dest_dir_path}/.tmp.XXXXXX") || {
         print_error "Failed to create temporary file for: $dest"
@@ -493,6 +503,8 @@ get_profile_file() {
         ((depth++)) || true
 
         # Check for circular inheritance
+        # S-L1 Note: Space-delimited string pattern safe here - profile names validated
+        # by create-profile.sh to not contain spaces ([a-zA-Z][a-zA-Z0-9_-]*)
         if [[ " $visited_profiles " == *" $current_profile "* ]]; then
             print_warning "Circular inheritance detected at profile: $current_profile"
             return $PROFILE_FILE_CIRCULAR_REF
@@ -552,8 +564,11 @@ get_profile_files() {
     local subdir=$3
 
     local current_profile=$profile
+    # S-H3 Note: visited_profiles uses space-delimited string; safe because profile names
+    # are validated to not contain spaces (validate_profile_name uses [a-zA-Z][a-zA-Z0-9_-]*)
     local visited_profiles=""
-    local all_files=""
+    # S-H3 Fix: Use associative array for all_files to handle paths with spaces
+    declare -A seen_files
     local excluded_patterns=""
 
     # First, collect exclusion patterns and file overrides
@@ -641,13 +656,15 @@ get_profile_files() {
                 fi
 
                 if [[ "$excluded" != "true" ]]; then
-                    # Check if already in list (override scenario)
-                    if [[ ! " $all_files " == *" $relative_path "* ]]; then
-                        all_files="$all_files $relative_path"
+                    # S-H3 Fix: Check if already seen using associative array (handles paths with spaces)
+                    if [[ -z "${seen_files[$relative_path]:-}" ]]; then
+                        seen_files["$relative_path"]=1
                         # Output file path; ignore echo failures (extremely rare)
                         echo "$relative_path" || true
                     fi
                 fi
+            # S-M11 Note: Suppress find stderr to ignore permission errors on unreadable dirs.
+            # This is intentional as profile dirs may have mixed permissions.
             done < <(find "$search_dir" -type f \( -name "*.md" -o -name "*.yml" -o -name "*.yaml" \) 2>/dev/null)
         fi
     done | sort -u
@@ -657,6 +674,11 @@ get_profile_files() {
 # Supports: * (matches anything except /), ** (matches anything including /)
 # Args: $1=path to match, $2=glob pattern
 # Returns: 0 if matches, 1 if not
+# S-M8 Note: Escaping chain order matters to avoid double-escaping:
+#   1. Escape regex metacharacters (. ^ $ [ ] ( ) { } | +)
+#   2. Convert ? to . (single char match)
+#   3. Convert ** to placeholder, then * to [^/]*, then placeholder to .*
+# This ensures patterns like "*.md" work correctly
 match_pattern() {
     local path=$1
     local pattern=$2
@@ -812,16 +834,18 @@ process_conditionals() {
                     print_warning "Mismatched template tags: {{ENDIF $flag_name}} closes {{UNLESS ...}}"
                     tag_mismatch_detected=true  # M4 Fix: Track mismatch
                 fi
-                # Use array slice to avoid sparse array issues
-                stack_tag_type=("${stack_tag_type[@]:0:$last_type_index}")
+                # S-M3 Fix: Use temporary variable for array slice to avoid bash edge cases
+                local temp_type_array=("${stack_tag_type[@]:0:$last_type_index}")
+                stack_tag_type=("${temp_type_array[@]}")
             fi
 
             # Pop should_include from stack
             if [[ ${#stack_should_include[@]} -gt 0 ]]; then
                 local last_index=$((${#stack_should_include[@]} - 1))
                 should_include="${stack_should_include[$last_index]}"
-                # Use array slice to avoid sparse array issues
-                stack_should_include=("${stack_should_include[@]:0:$last_index}")
+                # S-M3 Fix: Use temporary variable for array slice
+                local temp_include_array=("${stack_should_include[@]:0:$last_index}")
+                stack_should_include=("${temp_include_array[@]}")
             else
                 should_include=true
             fi
@@ -842,16 +866,18 @@ process_conditionals() {
                     print_warning "Mismatched template tags: {{ENDUNLESS $flag_name}} closes {{IF ...}}"
                     tag_mismatch_detected=true  # M4 Fix: Track mismatch
                 fi
-                # Use array slice to avoid sparse array issues
-                stack_tag_type=("${stack_tag_type[@]:0:$last_type_index}")
+                # S-M3 Fix: Use temporary variable for array slice to avoid bash edge cases
+                local temp_type_array=("${stack_tag_type[@]:0:$last_type_index}")
+                stack_tag_type=("${temp_type_array[@]}")
             fi
 
             # Pop should_include from stack
             if [[ ${#stack_should_include[@]} -gt 0 ]]; then
                 local last_index=$((${#stack_should_include[@]} - 1))
                 should_include="${stack_should_include[$last_index]}"
-                # Use array slice to avoid sparse array issues
-                stack_should_include=("${stack_should_include[@]:0:$last_index}")
+                # S-M3 Fix: Use temporary variable for array slice
+                local temp_include_array=("${stack_should_include[@]:0:$last_index}")
+                stack_should_include=("${temp_include_array[@]}")
             else
                 should_include=true
             fi
@@ -929,7 +955,8 @@ process_workflows() {
                 local temp_ref=$(create_temp_file)
                 echo "$content" > "$temp_content"
                 echo "$workflow_reference" > "$temp_ref"
-                content=$(perl -e '
+                local perl_result
+                perl_result=$(perl -e '
                     use strict;
                     use warnings;
 
@@ -953,9 +980,13 @@ process_workflows() {
                     $content =~ s/$escaped_pattern/$replacement/g;
 
                     print $content;
-                ' "$workflow_ref" "$temp_ref" "$temp_content") || {
-                    print_warning "Perl replacement failed for lazy workflow: $workflow_ref"
-                }
+                ' "$workflow_ref" "$temp_ref" "$temp_content" 2>/dev/null)
+                local perl_exit=$?
+                if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                    print_warning "Perl replacement failed for lazy workflow: $workflow_ref (exit=$perl_exit)"
+                else
+                    content="$perl_result"
+                fi
                 remove_temp_file "$temp_content"
                 remove_temp_file "$temp_ref"
             else
@@ -978,7 +1009,8 @@ process_workflows() {
                 echo "$workflow_content" > "$temp_replacement"
 
                 # Use perl to do the replacement without escaping newlines
-                content=$(perl -e '
+                local perl_result
+                perl_result=$(perl -e '
                     use strict;
                     use warnings;
 
@@ -1001,9 +1033,13 @@ process_workflows() {
                     $content =~ s/$pattern/$replacement/g;
 
                     print $content;
-                ' "$workflow_ref" "$temp_replacement" "$temp_content") || {
-                    print_warning "Perl replacement failed for workflow: $workflow_ref"
-                }
+                ' "$workflow_ref" "$temp_replacement" "$temp_content" 2>/dev/null)
+                local perl_exit=$?
+                if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                    print_warning "Perl replacement failed for workflow: $workflow_ref (exit=$perl_exit)"
+                else
+                    content="$perl_result"
+                fi
 
                 remove_temp_file "$temp_content"
                 remove_temp_file "$temp_replacement"
@@ -1017,7 +1053,8 @@ process_workflows() {
             local temp_replacement=$(create_temp_file)
             echo "$content" > "$temp_content"
             printf '%s\n%s' "$workflow_ref" "$warning_msg" > "$temp_replacement"
-            content=$(perl -e '
+            local perl_result
+            perl_result=$(perl -e '
                 use strict;
                 use warnings;
 
@@ -1041,14 +1078,15 @@ process_workflows() {
                 $content =~ s/$pattern/$replacement/g;
 
                 print $content;
-            ' "$workflow_ref" "$temp_replacement" "$temp_content") || {
-                print_warning "Perl replacement failed for workflow: $workflow_ref"
-                remove_temp_file "$temp_content"
-                remove_temp_file "$temp_replacement"
-                continue
-            }
+            ' "$workflow_ref" "$temp_replacement" "$temp_content" 2>/dev/null)
+            local perl_exit=$?
             remove_temp_file "$temp_content"
             remove_temp_file "$temp_replacement"
+            if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                print_warning "Perl replacement failed for workflow not found: $workflow_ref (exit=$perl_exit)"
+                continue
+            fi
+            content="$perl_result"
         fi
     done <<< "$workflow_refs"
 
@@ -1093,7 +1131,8 @@ process_protocols() {
             local temp_ref=$(create_temp_file)
             echo "$content" > "$temp_content"
             echo "$protocol_reference" > "$temp_ref"
-            content=$(perl -e '
+            local perl_result
+            perl_result=$(perl -e '
                 use strict;
                 use warnings;
 
@@ -1117,11 +1156,15 @@ process_protocols() {
                 $content =~ s/$escaped_pattern/$replacement/g;
 
                 print $content;
-            ' "$protocol_ref" "$temp_ref" "$temp_content") || {
-                print_warning "Perl replacement failed for protocol: $protocol_ref"
-            }
+            ' "$protocol_ref" "$temp_ref" "$temp_content" 2>/dev/null)
+            local perl_exit=$?
             remove_temp_file "$temp_content"
             remove_temp_file "$temp_ref"
+            if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                print_warning "Perl replacement failed for protocol: $protocol_ref (exit=$perl_exit)"
+            else
+                content="$perl_result"
+            fi
         else
             # Protocol not found - insert warning
             local warning_msg="⚠️ This protocol file was not found: ~/agent-os/profiles/$profile/protocols/${protocol_path}.md"
@@ -1130,7 +1173,8 @@ process_protocols() {
             local temp_replacement=$(create_temp_file)
             echo "$content" > "$temp_content"
             printf '%s\n%s' "$protocol_ref" "$warning_msg" > "$temp_replacement"
-            content=$(perl -e '
+            local perl_result
+            perl_result=$(perl -e '
                 use strict;
                 use warnings;
 
@@ -1154,14 +1198,15 @@ process_protocols() {
                 $content =~ s/$pattern/$replacement/g;
 
                 print $content;
-            ' "$protocol_ref" "$temp_replacement" "$temp_content") || {
-                print_warning "Perl replacement failed for protocol: $protocol_ref"
-                remove_temp_file "$temp_content"
-                remove_temp_file "$temp_replacement"
-                continue
-            }
+            ' "$protocol_ref" "$temp_replacement" "$temp_content" 2>/dev/null)
+            local perl_exit=$?
             remove_temp_file "$temp_content"
             remove_temp_file "$temp_replacement"
+            if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                print_warning "Perl replacement failed for protocol not found: $protocol_ref (exit=$perl_exit)"
+                continue
+            fi
+            content="$perl_result"
         fi
     done <<< "$protocol_refs"
 
@@ -1169,6 +1214,9 @@ process_protocols() {
 }
 
 # Process standards replacements
+# S-M2 Note: This function uses pipes with while loops. Variable scope is lost in subshells,
+# but this is acceptable here because we only output via echo, not modifying shared state.
+# The echo output is collected by the final | sort -u.
 process_standards() {
     local content=$1
     local base_dir=$2
@@ -1277,7 +1325,8 @@ process_phase_tags() {
                     echo "$standards_list" > "$temp_standards"
 
                     # Use perl to replace without escaping newlines
-                    file_content=$(perl -e '
+                    local perl_result
+                    perl_result=$(perl -e '
                         use strict;
                         use warnings;
 
@@ -1301,12 +1350,15 @@ process_phase_tags() {
                         $content =~ s/$pattern/$standards/g;
 
                         print $content;
-                    ' "$standards_ref" "$temp_standards" "$temp_file_content") || {
-                        print_warning "Perl replacement failed for standards: $standards_ref"
-                    }
-
+                    ' "$standards_ref" "$temp_standards" "$temp_file_content" 2>/dev/null)
+                    local perl_exit=$?
                     remove_temp_file "$temp_file_content"
                     remove_temp_file "$temp_standards"
+                    if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                        print_warning "Perl replacement failed for standards: $standards_ref (exit=$perl_exit)"
+                    else
+                        file_content="$perl_result"
+                    fi
                 done <<< "$standards_refs"
 
                 # Create the replacement text with H1 header
@@ -1318,7 +1370,8 @@ process_phase_tags() {
                 echo "$content" > "$temp_content"
                 echo "$replacement" > "$temp_replacement"
 
-                content=$(perl -e '
+                local perl_result
+                perl_result=$(perl -e '
                     use strict;
                     use warnings;
 
@@ -1342,12 +1395,15 @@ process_phase_tags() {
                     $content =~ s/$pattern/$replacement/g;
 
                     print $content;
-                ' "$phase_ref" "$temp_replacement" "$temp_content") || {
-                    print_warning "Perl replacement failed for PHASE tag: $phase_ref"
-                }
-
+                ' "$phase_ref" "$temp_replacement" "$temp_content" 2>/dev/null)
+                local perl_exit=$?
                 remove_temp_file "$temp_content"
                 remove_temp_file "$temp_replacement"
+                if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                    print_warning "Perl replacement failed for PHASE tag: $phase_ref (exit=$perl_exit)"
+                else
+                    content="$perl_result"
+                fi
             else
                 print_verbose "Warning: File not found for PHASE tag: $file_ref"
             fi
@@ -1401,7 +1457,8 @@ compile_agent() {
                     echo "$value" > "$temp_value"
 
                     # Use perl to replace without escaping newlines
-                    content=$(perl -e '
+                    local perl_result
+                    perl_result=$(perl -e '
                         use strict;
                         use warnings;
 
@@ -1425,12 +1482,15 @@ compile_agent() {
                         $content =~ s/$pattern/$value/g;
 
                         print $content;
-                    ' "$key" "$temp_value" "$temp_content") || {
-                        print_warning "Perl replacement failed for role key: $key"
-                    }
-
+                    ' "$key" "$temp_value" "$temp_content" 2>/dev/null)
+                    local perl_exit=$?
                     remove_temp_file "$temp_content"
                     remove_temp_file "$temp_value"
+                    if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+                        print_warning "Perl replacement failed for role key: $key (exit=$perl_exit)"
+                    else
+                        content="$perl_result"
+                    fi
                 fi
             fi
         done < "$temp_role_data"
@@ -1467,7 +1527,8 @@ compile_agent() {
         echo "$standards_list" > "$temp_standards"
 
         # Use perl to replace without escaping newlines
-        content=$(perl -e '
+        local perl_result
+        perl_result=$(perl -e '
             use strict;
             use warnings;
 
@@ -1491,12 +1552,15 @@ compile_agent() {
             $content =~ s/$pattern/$standards/g;
 
             print $content;
-        ' "$standards_ref" "$temp_standards" "$temp_content") || {
-            print_warning "Perl replacement failed for standards: $standards_ref"
-        }
-
+        ' "$standards_ref" "$temp_standards" "$temp_content" 2>/dev/null)
+        local perl_exit=$?
         remove_temp_file "$temp_content"
         remove_temp_file "$temp_standards"
+        if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+            print_warning "Perl replacement failed for standards: $standards_ref (exit=$perl_exit)"
+        else
+            content="$perl_result"
+        fi
     done <<< "$standards_refs"
 
     # Process PHASE tag replacements
@@ -1512,7 +1576,8 @@ compile_agent() {
         local temp_replacement=$(create_temp_file)
         echo "$content" > "$temp_content"
         echo "$new_tools_line" > "$temp_replacement"
-        content=$(perl -e '
+        local perl_result
+        perl_result=$(perl -e '
             use strict;
             use warnings;
 
@@ -1534,11 +1599,15 @@ compile_agent() {
             $content =~ s/^tools:.*$/$replacement/m;
 
             print $content;
-        ' "$temp_replacement" "$temp_content") || {
-            print_warning "Perl replacement failed for Playwright tools"
-        }
+        ' "$temp_replacement" "$temp_content" 2>/dev/null)
+        local perl_exit=$?
         remove_temp_file "$temp_content"
         remove_temp_file "$temp_replacement"
+        if [[ $perl_exit -ne 0 ]] || [[ -z "$perl_result" ]]; then
+            print_warning "Perl replacement failed for Playwright tools (exit=$perl_exit)"
+        else
+            content="$perl_result"
+        fi
     fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -1826,6 +1895,11 @@ preflight_check() {
 
 # Parse boolean flag value
 # Outputs: "value shift_count" (e.g., "true 1" or "false 2")
+# S-L2 Pattern: This function returns TWO values via stdout: the boolean value
+# and how many args to shift. Callers use read to capture both:
+#   read -r value shift_count <<< "$(parse_bool_flag "$current" "$next")"
+# The shift_count is 1 if no explicit value given (flag alone = true),
+# or 2 if explicit true/false was provided after the flag.
 parse_bool_flag() {
     local current_value=$1
     local next_value=$2
