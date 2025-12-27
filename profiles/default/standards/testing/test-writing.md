@@ -34,8 +34,8 @@
 - **Component Testing**: Use React Testing Library, Vue Test Utils, or framework-specific tools to test component behavior
 - **E2E Testing**: Use Playwright or Cypress for critical user flows; run E2E tests in CI before deploy
 - **Visual Regression**: Consider visual snapshot testing (Percy, Chromatic) for UI-heavy applications
-- **Accessibility Testing**: Use axe-core or similar in unit tests; manual testing with screen readers for critical flows (see `accessibility.md`)
-- **Error Boundary Testing**: Test that error boundaries catch and display component failures gracefully (see `error-handling.md`)
+- **Accessibility Testing**: Use axe-core or similar in unit tests; manual testing with screen readers for critical flows (see `frontend/accessibility.md`)
+- **Error Boundary Testing**: Test that error boundaries catch and display component failures gracefully (see `global/error-handling.md`)
 
 ## Related Standards
 - `frontend/accessibility.md` - Accessibility testing with axe-core

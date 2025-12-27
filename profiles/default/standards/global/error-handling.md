@@ -11,7 +11,7 @@
 - **Clean Up Resources**: Always clean up resources (file handles, connections) in finally blocks or equivalent mechanisms
 - **Error Propagation**: Let errors bubble up to boundary handlers; avoid swallowing exceptions silently
 - **Error Boundaries (Frontend)**: Implement UI error boundaries to catch and display component failures gracefully
-- **Error Correlation**: Include request ID and correlation ID in error responses for debugging across services (see `logging.md` for correlation ID patterns)
+- **Error Correlation**: Include request ID and correlation ID in error responses for debugging across services (see `global/logging.md` for correlation ID patterns)
 - **Error Categories**: Distinguish between client errors (4xx - invalid input) and server errors (5xx - system failures) in logging and handling
 - **Recoverable vs Fatal**: Differentiate between recoverable errors (retry possible) and fatal errors (fail fast)
-- **Error Context**: Log full context (user, request, stack trace) for debugging while showing safe messages to users (see `logging.md` for structured logging)
+- **Error Context**: Log full context (user, request, stack trace) for debugging while showing safe messages to users (see `global/logging.md` for structured logging)

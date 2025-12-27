@@ -4,6 +4,52 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-27 10:15] Standards Cross-Reference Fixes - MEDIUM/LOW Severity
+
+### Description
+
+Fixed issues from "PARTEA 2: PROBLEME STANDARDS/WORKFLOWS/PROTOCOLS" of the comprehensive analysis. These fixes improve cross-reference consistency by qualifying file references and standardizing Related Standards format across all standard files.
+
+### Issues Fixed
+
+| # | Location | Problem | Fix |
+|---|----------|---------|-----|
+| W-M1 | global/logging.md:3 | Missing bidirectional reference to performance.md | ✅ Already fixed - `global/performance.md` already present |
+| W-M2 | global/performance.md:14-18 | Inconsistent formatting - uses `## Related Standards` instead of blockquote | Changed to `> **Related Standards**:` format at top; removed old section |
+| W-L1 | testing/test-writing.md:37-38 | Unqualified file references | Qualified to `frontend/accessibility.md` and `global/error-handling.md` |
+| W-L2 | global/error-handling.md:14,17 | Unqualified file references | Qualified to `global/logging.md` |
+
+### Additional Fix (Found During Review)
+
+| Location | Problem | Fix |
+|----------|---------|-----|
+| global/performance.md:11 | Unqualified reference `queries.md` | Qualified to `backend/queries.md` |
+
+### Modified Files
+
+| File | Modification |
+|------|--------------|
+| `profiles/default/standards/global/performance.md` | W-M2 (moved Related Standards to blockquote format at top, qualified `queries.md` reference) |
+| `profiles/default/standards/testing/test-writing.md` | W-L1 (qualified `accessibility.md` → `frontend/accessibility.md`, `error-handling.md` → `global/error-handling.md`) |
+| `profiles/default/standards/global/error-handling.md` | W-L2 (qualified `logging.md` → `global/logging.md` at lines 14, 17) |
+
+### Verification Results
+
+✅ All cross-references now use qualified paths with category prefixes
+✅ Related Standards sections follow consistent blockquote format
+✅ Bidirectional references maintained between related standards
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| Issues fixed | 4 (1 already fixed, 3 active) |
+| Additional issues fixed | 1 |
+| Files modified | 3 |
+| References qualified | 5 |
+
+---
+
 ## [2025-12-27 09:30] Bash Scripts Deep Analysis Fixes - HIGH/MEDIUM/LOW Severity
 
 ### Description
