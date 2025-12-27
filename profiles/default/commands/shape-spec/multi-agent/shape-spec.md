@@ -37,6 +37,14 @@ The spec-shaper will give you several separate responses that you MUST show to t
 - Display these questions to the user and wait for their response
 - The spec-shaper may ask you to relay follow-up questions that you must present to user
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the spec-initializer and spec-shaper subagents, ensure you pass the following standards context so the requirements align with the user's preferred tech stack and conventions:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Inform the user
 
 After all steps complete, inform the user:

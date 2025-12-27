@@ -49,6 +49,14 @@ Instruct the subagent to:
 3. Create the review report at `agent-os/specs/[spec-path]/implementation/code-review.md`
 4. Return a summary of findings
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+CRITICAL: Code review specifically requires all standards to evaluate compliance. When delegating to the code-reviewer subagent, you MUST pass the following standards context:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Present findings and next steps
 
 After the code-reviewer completes, inform the user:

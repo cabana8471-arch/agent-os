@@ -696,6 +696,29 @@ handle_reinstallation() {
 
         print_verbose "Backup created at: $_REINSTALL_BACKUP_DIR"
 
+        # AOS-0004 Fix: Verify backup contains expected directories before deletion
+        local backup_valid=true
+        if [[ -d "$PROJECT_DIR/agent-os" ]] && [[ ! -d "$_REINSTALL_BACKUP_DIR/agent-os" ]]; then
+            print_warning "Backup verification failed: agent-os directory not in backup"
+            backup_valid=false
+        fi
+        if [[ -d "$PROJECT_DIR/.claude/agents/agent-os" ]] && [[ ! -d "$_REINSTALL_BACKUP_DIR/.claude/agents/agent-os" ]]; then
+            print_warning "Backup verification failed: .claude/agents/agent-os not in backup"
+            backup_valid=false
+        fi
+        if [[ -d "$PROJECT_DIR/.claude/commands/agent-os" ]] && [[ ! -d "$_REINSTALL_BACKUP_DIR/.claude/commands/agent-os" ]]; then
+            print_warning "Backup verification failed: .claude/commands/agent-os not in backup"
+            backup_valid=false
+        fi
+
+        if [[ "$backup_valid" != "true" ]]; then
+            print_error "Backup verification failed - aborting reinstall to prevent data loss"
+            print_error "Backup location: $_REINSTALL_BACKUP_DIR"
+            rm -rf "$_REINSTALL_BACKUP_DIR"
+            exit 1
+        fi
+        print_verbose "Backup verification passed"
+
         print_status "Removing existing installation..."
         rm -rf "$PROJECT_DIR/agent-os"
         rm -rf "$PROJECT_DIR/.claude/agents/agent-os"

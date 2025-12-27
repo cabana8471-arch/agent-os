@@ -21,6 +21,14 @@ The product-planner will:
 - Create `agent-os/product/roadmap.md` with phased development plan
 - Create `agent-os/product/tech-stack.md` documenting all of this product's tech stack choices
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the product-planner subagent, ensure you pass the following standards context so the product planning aligns with the user's preferred tech stack and conventions:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 2: Inform the user
 
 After all steps are complete, output the following to inform the user:

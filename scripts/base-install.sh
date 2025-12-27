@@ -211,12 +211,29 @@ for item in data.get('tree', []):
             fi
         done
     else
+        # AOS-0003 Fix: Improved fallback JSON parser with validation
         # S-M12 Fix: Show warning when using less reliable fallback parser
         print_warning "Neither jq nor python3 available. Using awk fallback (less reliable)."
+        print_warning "For reliable parsing, install jq: brew install jq (macOS) or apt install jq (Linux)"
         print_verbose "Using sed/awk to parse JSON (less reliable)"
+
         # Parse JSON using sed and awk - less reliable but works for simple cases
-        echo "$response" | awk -F'"' '/"type":"blob"/{blob=1} blob && /"path":/{print $4; blob=0}' | while read -r file_path; do
-            if ! should_exclude "$file_path"; then
+        # AOS-0003 Fix: Capture output first to validate results aren't empty/corrupted
+        local parsed_files
+        parsed_files=$(echo "$response" | awk -F'"' '/"type":"blob"/{blob=1} blob && /"path":/{print $4; blob=0}')
+
+        # AOS-0003 Fix: Validate that awk parsing produced reasonable output
+        local parsed_count
+        parsed_count=$(echo "$parsed_files" | grep -c '.' 2>/dev/null || echo "0")
+        if [[ "$parsed_count" -eq 0 ]]; then
+            print_error "awk fallback parser returned no files - JSON may contain escaped quotes"
+            print_error "Please install jq or python3 for reliable JSON parsing"
+            return 1
+        fi
+
+        # Only output valid paths
+        echo "$parsed_files" | while read -r file_path; do
+            if [[ -n "$file_path" ]] && ! should_exclude "$file_path"; then
                 echo "$file_path"
             fi
         done
@@ -313,7 +330,8 @@ install_all_files() {
     local download_status=$?
 
     # Stop spinner if running
-    if [[ -n "$spinner_pid" ]]; then
+    # AOS-0005 Fix: Validate PID is numeric before attempting to kill
+    if [[ -n "$spinner_pid" ]] && [[ "$spinner_pid" =~ ^[0-9]+$ ]]; then
         # H1 Fix: Quote PID to prevent killing wrong process if unset/corrupted
         kill "$spinner_pid" 2>/dev/null
         wait "$spinner_pid" 2>/dev/null
@@ -321,6 +339,10 @@ install_all_files() {
         # Clear the line and restore cursor
         echo -ne "\r\033[K"
         tput cnorm 2>/dev/null || true  # Show cursor again
+    elif [[ -n "$spinner_pid" ]]; then
+        # AOS-0005 Fix: Log warning if PID is non-numeric (indicates a bug)
+        print_verbose "Warning: spinner_pid '$spinner_pid' is not numeric - skipping kill"
+        spinner_pid=""
     fi
 
     if [[ "$DRY_RUN" != "true" ]]; then
@@ -474,21 +496,29 @@ create_backup() {
 }
 
 # Full update - updates profile, scripts, CHANGELOG.md, and version number in config.yml
+# AOS-0002 Fix: Download to temp directory first, verify, then swap to prevent data loss
 full_update() {
     local latest_version=$1
 
     # Create backup first
     create_backup
 
-    # Update default profile
+    # Update default profile - download to temp first to verify success before deletion
     print_status "Updating default profile..."
-    rm -rf "$BASE_DIR/profiles/default"
+
+    # AOS-0002 Fix: Create temp directory for safe download
+    local temp_download
+    temp_download=$(mktemp -d) || {
+        print_error "Failed to create temporary download directory"
+        return 1
+    }
+
     local file_count=0
     local all_files=$(get_all_repo_files | grep "^profiles/default/")
     if [[ -n "$all_files" ]]; then
         while IFS= read -r file_path; do
             if [[ -n "$file_path" ]]; then
-                local dest_file="${BASE_DIR}/${file_path}"
+                local dest_file="${temp_download}/${file_path}"
                 local dir_path=$(dirname "$dest_file")
                 [[ -d "$dir_path" ]] || mkdir -p "$dir_path"
                 if download_file "$file_path" "$dest_file"; then
@@ -498,7 +528,20 @@ full_update() {
             fi
         done <<< "$all_files"
     fi
-    echo "✓ Updated default profile ($file_count files)"
+
+    # AOS-0002 Fix: Verify download succeeded before replacing existing profile
+    if [[ $file_count -gt 0 ]] && [[ -d "$temp_download/profiles/default" ]]; then
+        # Download succeeded - safe to replace
+        rm -rf "$BASE_DIR/profiles/default"
+        mv "$temp_download/profiles/default" "$BASE_DIR/profiles/"
+        rm -rf "$temp_download"
+        echo "✓ Updated default profile ($file_count files)"
+    else
+        # Download failed - keep existing profile, clean up temp
+        rm -rf "$temp_download"
+        print_error "Download failed, keeping existing profile (backup at ~/agent-os.backup)"
+        return 1
+    fi
     echo ""
 
     # Update scripts

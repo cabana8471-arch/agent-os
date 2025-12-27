@@ -27,6 +27,14 @@ Provide the tasks-list-creator:
 
 The tasks-list-creator will create `tasks.md` inside the spec folder.
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the tasks-list-creator subagent, ensure you pass the following standards context so the tasks align with the user's preferred tech stack and conventions:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ## PHASE 3: Inform user
 
 Once the tasks-list-creator has created `tasks.md` output the following to inform the user:

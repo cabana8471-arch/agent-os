@@ -52,6 +52,14 @@ Instruct the subagent to:
 7. Create the audit report at `agent-os/reports/dependency-audit-[date].md`
 8. Return a summary of findings
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the dependency-manager subagent, ensure you pass the following standards context so the audit aligns with the user's preferred tech stack and conventions:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Present findings and recommendations
 
 After the dependency-manager completes, inform the user:

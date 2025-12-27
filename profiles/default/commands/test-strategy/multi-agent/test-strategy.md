@@ -51,6 +51,14 @@ Instruct the subagent to:
 5. Generate the test plan at `agent-os/specs/[spec-path]/implementation/test-plan.md`
 6. Return a summary of the strategy
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the test-strategist subagent, ensure you pass the following standards context so the test strategy aligns with the user's preferred tech stack and conventions:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Present strategy and next steps
 
 After the test-strategist completes, inform the user:

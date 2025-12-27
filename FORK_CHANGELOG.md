@@ -4,6 +4,63 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-27 16:30] CRITICAL & HIGH Severity Fixes - Security & Data Integrity
+
+### Description
+
+Fixed 2 CRITICAL and 5 HIGH severity issues from the comprehensive analysis (AOS-0001 to AOS-0007). These fixes address critical bugs that could cause data loss or corruption, and improve security and reliability of the installation and update processes.
+
+### Issues Fixed
+
+| # | Severity | Location | Problem | Fix |
+|---|----------|----------|---------|-----|
+| AOS-0001 | CRITICAL | common-functions.sh:2215 | `write_file()` arguments reversed in `create_standard_skill()` - would write filename as content | Swapped arguments to correct order: `write_file "$skill_content" "$skill_file"` |
+| AOS-0002 | CRITICAL | base-install.sh:485 | Full update deletes profile BEFORE verifying download - if download fails, profile is gone | Download to temp directory first, verify success, then swap |
+| AOS-0003 | HIGH | base-install.sh:214-223 | Fallback JSON parser unreliable with escaped quotes | Added validation, error handling, and recommendation to install jq |
+| AOS-0004 | HIGH | project-install.sh:654-729 | Reinstall doesn't verify backup success before deletion | Added backup verification before proceeding with deletion |
+| AOS-0005 | HIGH | base-install.sh:316-324 | Spinner PID validation missing - could kill wrong process | Added `[[ "$spinner_pid" =~ ^[0-9]+$ ]]` check before kill |
+| AOS-0006 | HIGH | 8 multi-agent command files | Missing standards pass to subagents - subagents have no coding standards | Added `{{standards/*}}` sections to all 8 multi-agent commands |
+| AOS-0007 | HIGH | review-code/multi-agent | Missing standards pass in code review - critical for compliance checking | Added `{{standards/*}}` section with CRITICAL emphasis |
+
+### Modified Files
+
+| File | Modifications |
+|------|---------------|
+| `scripts/common-functions.sh` | AOS-0001: Fixed write_file argument order in create_standard_skill() |
+| `scripts/base-install.sh` | AOS-0002: Safe download-then-swap pattern; AOS-0003: JSON parser validation; AOS-0005: PID validation |
+| `scripts/project-install.sh` | AOS-0004: Backup verification before deletion |
+| `profiles/default/commands/create-tasks/multi-agent/create-tasks.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/analyze-features/multi-agent/analyze-features.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/analyze-refactoring/multi-agent/analyze-refactoring.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/audit-deps/multi-agent/audit-deps.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/generate-docs/multi-agent/generate-docs.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/test-strategy/multi-agent/test-strategy.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/shape-spec/multi-agent/shape-spec.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/plan-product/multi-agent/plan-product.md` | AOS-0006: Added standards section |
+| `profiles/default/commands/review-code/multi-agent/review-code.md` | AOS-0007: Added standards section (CRITICAL for compliance) |
+
+### Verification Results
+
+✅ All bash scripts pass syntax check (`bash -n`)
+✅ write_file arguments now in correct order (content, destination)
+✅ Full update downloads to temp before deletion - safe rollback
+✅ JSON parser validates output and provides actionable error message
+✅ Reinstall backup verified before deletion
+✅ Spinner PID validated as numeric before kill
+✅ All 9 multi-agent commands now pass standards to subagents
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| CRITICAL issues fixed | 2 |
+| HIGH issues fixed | 5 |
+| Scripts modified | 3 |
+| Multi-agent commands modified | 9 |
+| Total files modified | 12 |
+
+---
+
 ## [2025-12-27 14:00] NextJS Profile Standards/Workflows Fixes
 
 ### Description

@@ -2207,12 +2207,14 @@ create_standard_skill() {
     skill_content=$(echo "$skill_content" | sed "s|{{standard_file_path}}|$standard_file_path_with_prefix|g")
 
     # M6 Fix: Write SKILL.md using write_file for atomic operations
+    # AOS-0001 Fix: Arguments were reversed - write_file expects (content, dest)
     local skill_file="$skill_dir/SKILL.md"
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "$skill_file"
     else
         # Use write_file for atomic write protection
-        if ! write_file "$skill_file" "$skill_content"; then
+        # Correct order: write_file "$content" "$destination"
+        if ! write_file "$skill_content" "$skill_file"; then
             print_warning "Failed to create skill file: $skill_file"
             return 1
         fi

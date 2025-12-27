@@ -52,6 +52,14 @@ Instruct the subagent to:
 6. Create documentation summary at `agent-os/specs/[spec-path]/implementation/documentation-summary.md`
 7. Return a summary of what was documented
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the documentation-writer subagent, ensure you pass the following standards context so the documentation aligns with the user's preferred tech stack and conventions:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Present results and next steps
 
 After the documentation-writer completes, inform the user:

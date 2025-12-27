@@ -51,6 +51,14 @@ Instruct the subagent to:
 5. Create the analysis report at `agent-os/reports/refactoring-analysis-[date].md`
 6. Return a summary of findings with prioritized recommendations
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the refactoring-advisor subagent, ensure you pass the following standards context so the analysis aligns with the user's preferred tech stack and conventions:
+
+{{standards/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Present findings and recommendations
 
 After the refactoring-advisor completes, inform the user:
