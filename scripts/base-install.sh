@@ -451,7 +451,12 @@ prompt_overwrite_choice() {
     echo -e "${YELLOW}6) Cancel and abort${NC}"
     echo ""
 
-    read -p "Enter your choice (1-6): " choice < /dev/tty
+    # AOS-0073 Fix: Added 60-second timeout to prevent indefinite hang in CI/CD
+    if ! read -t 60 -p "Enter your choice (1-6): " choice < /dev/tty; then
+        echo
+        print_warning "Input timeout - defaulting to cancel"
+        exit 0
+    fi
 
     case $choice in
         1)

@@ -120,10 +120,10 @@ Agents are configured with specific models based on task complexity:
 Each agent has a unique color in its frontmatter for visual identification in UIs that support agent colors. The 14 distinct colors (cyan, green, blue, purple, orange, red, pink, olive, yellow, lime, teal, gray, magenta, indigo) are intentional to help users quickly distinguish between different agent types during orchestrated workflows.
 
 ### Standards System (`profiles/default/standards/`)
-19 standard template files across 4 categories (including _index.md):
-- `global/` - tech-stack, coding-style, conventions, validation, commenting, error-handling, logging, performance, security
+23 standard template files across 4 categories (including _index.md and _toc.md):
+- `global/` - tech-stack, coding-style, conventions, deprecation, validation, commenting, error-handling, logging, performance, security
 - `backend/` - api, models, queries, migrations
-- `frontend/` - components, css, responsive, accessibility
+- `frontend/` - components, css, responsive, routing, state-management, accessibility
 - `testing/` - test-writing
 
 ### Workflows (`profiles/default/workflows/`)

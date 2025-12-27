@@ -169,7 +169,12 @@ get_profile_name() {
         echo "Example names: 'rails', 'python', 'react', 'wordpress'"
         echo ""
 
-        read -p "$(echo -e "${BLUE}Profile name: ${NC}")" profile_input
+        # AOS-0074 Fix: Added 120-second timeout for interactive input
+        if ! read -t 120 -p "$(echo -e "${BLUE}Profile name: ${NC}")" profile_input; then
+            echo
+            print_warning "Input timeout"
+            exit 0
+        fi
 
         # Normalize the name
         PROFILE_NAME=$(normalize_name "$profile_input")
@@ -225,7 +230,13 @@ select_inheritance() {
         # Only one profile exists
         print_status "Should this profile inherit from the '${profiles[0]}' profile?"
         echo ""
-        read -p "$(echo -e "${BLUE}Inherit from '${profiles[0]}'? (y/n): ${NC}")" inherit_choice
+        # AOS-0074 Fix: Added 120-second timeout for interactive input
+        if ! read -t 120 -p "$(echo -e "${BLUE}Inherit from '${profiles[0]}'? (y/n): ${NC}")" inherit_choice; then
+            echo
+            print_warning "Input timeout"
+            INHERIT_FROM=""
+            return
+        fi
 
         if [[ "$inherit_choice" == "y" ]] || [[ "$inherit_choice" == "Y" ]]; then
             INHERIT_FROM="${profiles[0]}"
@@ -254,7 +265,13 @@ select_inheritance() {
         local selection=""  # Initialize selection before loop
         while [[ $attempt -lt $max_attempts ]]; do
             selection=""  # Reset selection at start of each iteration
-            read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
+            # AOS-0074 Fix: Added 120-second timeout for interactive input
+            if ! read -t 120 -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection; then
+                echo
+                print_warning "Input timeout"
+                INHERIT_FROM=""
+                return
+            fi
 
             if [[ "$selection" == "1" ]]; then
                 INHERIT_FROM=""
@@ -314,7 +331,13 @@ select_copy_source() {
         # Only one profile exists
         print_status "Do you want to copy the contents from the '${profiles[0]}' profile?"
         echo ""
-        read -p "$(echo -e "${BLUE}Copy from '${profiles[0]}'? (y/n): ${NC}")" copy_choice
+        # AOS-0074 Fix: Added 120-second timeout for interactive input
+        if ! read -t 120 -p "$(echo -e "${BLUE}Copy from '${profiles[0]}'? (y/n): ${NC}")" copy_choice; then
+            echo
+            print_warning "Input timeout"
+            COPY_FROM=""
+            return
+        fi
 
         if [[ "$copy_choice" == "y" ]] || [[ "$copy_choice" == "Y" ]]; then
             COPY_FROM="${profiles[0]}"
@@ -343,7 +366,13 @@ select_copy_source() {
         local selection=""  # Initialize selection before loop
         while [[ $attempt -lt $max_attempts ]]; do
             selection=""  # Reset selection at start of each iteration
-            read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
+            # AOS-0074 Fix: Added 120-second timeout for interactive input
+            if ! read -t 120 -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection; then
+                echo
+                print_warning "Input timeout"
+                COPY_FROM=""
+                return
+            fi
 
             if [[ "$selection" == "1" ]]; then
                 COPY_FROM=""

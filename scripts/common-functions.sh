@@ -1303,7 +1303,7 @@ process_standards() {
     local profile=$3
     local standards_patterns=$4
 
-    local standards_list=""
+    # AOS-0075 Fix: Removed unused 'standards_list' variable declaration (dead code)
 
     echo "$standards_patterns" | while read pattern; do
         if [[ -z "$pattern" ]]; then

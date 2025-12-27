@@ -225,20 +225,8 @@ load_configurations() {
     print_verbose "  Lazy load workflows: $EFFECTIVE_LAZY_LOAD_WORKFLOWS"
 }
 
-# -----------------------------------------------------------------------------
-# Version Compatibility Check
-# -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
-# Configuration Matching
-# -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
-# User Prompts
-# -----------------------------------------------------------------------------
-
+# AOS-0076 Fix: Removed 3 empty placeholder sections (Version Compatibility Check,
+# Configuration Matching, User Prompts) that had no implementation and added clutter.
 
 # -----------------------------------------------------------------------------
 # Update Functions
@@ -1017,12 +1005,14 @@ main() {
         validate_config "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS" "$EFFECTIVE_PROFILE" "true"
         echo ""
 
-        # M9 Note: Set up trap to rollback on error (only for non-dry-run)
+        # AOS-0072 Fix: Changed from ERR trap to EXIT trap with success flag
+        # ERR trap only catches command failures, not SIGINT/SIGTERM (Ctrl+C).
+        # EXIT trap ensures rollback happens on any exit (error, interrupt, or normal)
+        # unless we explicitly mark the update as successful.
         # In dry-run mode, no files are modified so no rollback is needed.
-        # cleanup_backup_on_success (line 1032) is also only called for non-dry-run,
-        # maintaining consistency between trap setup and cleanup
         if [[ "$DRY_RUN" != "true" ]]; then
-            trap 'rollback_from_backup' ERR
+            _UPDATE_SUCCESS="false"
+            trap 'if [[ "$_UPDATE_SUCCESS" != "true" ]]; then rollback_from_backup; fi' EXIT
         fi
 
         # Perform cleanup and update
@@ -1041,9 +1031,10 @@ main() {
         # Proceed with update
         perform_update
 
-        # Update successful - remove backup and disable rollback trap
+        # Update successful - mark success, clear trap, and cleanup backup
         if [[ "$DRY_RUN" != "true" ]]; then
-            trap - ERR
+            _UPDATE_SUCCESS="true"
+            trap - EXIT
             cleanup_backup_on_success
         fi
 
