@@ -4,6 +4,77 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-27 21:10] Documentation & Consistency Fixes (AOS-0065 to AOS-0071)
+
+### Description
+
+Fixed 5 verified issues from comprehensive analysis. These fixes improve documentation accuracy, command structure consistency, and remove duplicate protocol snippets. Issue AOS-0067 was deferred (low priority, 18 files affected), and AOS-0069 was removed as false positive (intentional design pattern).
+
+### Issues Fixed
+
+| # | Severity | Location | Problem | Fix |
+|---|----------|----------|---------|-----|
+| AOS-0065 | MEDIUM | CLAUDE.md:107,110 | Tools matrix incorrectly shows Skill tool for spec-verifier and implementation-verifier (removed in AOS-0032/AOS-0033) | Removed Skill checkmark from both agents in tools matrix |
+| AOS-0066 | MEDIUM | write-spec/multi-agent/write-spec.md | Command lacks PHASE structure, standards section, and error recovery compared to other multi-agent commands | Expanded to match structure with 3 phases, standards context, and error recovery |
+| AOS-0068 | LOW | protocols/snippets/ | Duplicate content between snippets and main protocols creates maintenance burden | Deleted 3 unused snippet files and removed empty directory |
+| AOS-0070 | LOW | implement-tasks/single-agent/2-implement-tasks.md:14 | Confusing message "Run /implement-tasks and select 3-code-review phase" when already in implement-tasks | Changed to "Proceed to the code review phase (phase 3) when ready" |
+| AOS-0071 | LOW | generate-docs/multi-agent/generate-docs.md:40-45 | Context list doesn't mention standards despite passing them below | Added "Standards context (see Standards section below)" to the list |
+
+### Issue Status
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| AOS-0065 | ✅ Fixed | CLAUDE.md tools matrix updated |
+| AOS-0066 | ✅ Fixed | write-spec multi-agent expanded |
+| AOS-0067 | ⏸️ Deferred | 18 standards files - low priority, `_index.md` provides cross-references |
+| AOS-0068 | ✅ Fixed | 3 snippets deleted, empty folder removed |
+| AOS-0069 | ❌ Removed | False positive - intentional design (section vs step output naming) |
+| AOS-0070 | ✅ Fixed | Phase navigation text clarified |
+| AOS-0071 | ✅ Fixed | Standards context added to list |
+
+### Modified Files
+
+| File | Modifications |
+|------|---------------|
+| `CLAUDE.md` | AOS-0065: Removed Skill checkmarks for spec-verifier and implementation-verifier |
+| `profiles/default/commands/write-spec/multi-agent/write-spec.md` | AOS-0066: Expanded from 25 to 81 lines with proper PHASE structure |
+| `profiles/default/commands/implement-tasks/single-agent/2-implement-tasks.md` | AOS-0070: Clarified phase navigation message |
+| `profiles/default/commands/generate-docs/multi-agent/generate-docs.md` | AOS-0071: Added standards context to the context list |
+
+### Deleted Files
+
+| File | Reason |
+|------|--------|
+| `profiles/default/protocols/snippets/issue-ids.md` | AOS-0068: Duplicates content in `protocols/issue-tracking.md` |
+| `profiles/default/protocols/snippets/severity-levels.md` | AOS-0068: Duplicates content in `protocols/issue-tracking.md` |
+| `profiles/default/protocols/snippets/output-format.md` | AOS-0068: Duplicates content in `protocols/output-protocol.md` |
+| `profiles/default/protocols/snippets/` | Empty directory after deletions |
+
+### Verification Results
+
+✅ All modified markdown files have valid structure
+✅ Tools matrix now matches actual agent configurations
+✅ write-spec multi-agent matches other command structures
+✅ No broken template references after snippet deletion
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| MEDIUM issues fixed | 2 |
+| LOW issues fixed | 3 |
+| Issues deferred | 1 (AOS-0067) |
+| Issues removed (false positive) | 1 (AOS-0069) |
+| Files modified | 4 |
+| Files deleted | 4 (3 snippets + empty directory) |
+
+### Issue Number Tracking
+
+- Issues used: AOS-0065 to AOS-0071
+- Next available issue number: **AOS-0072**
+
+---
+
 ## [2025-12-27 19:30] LOW Severity Fixes - Documentation & Edge Cases
 
 ### Description

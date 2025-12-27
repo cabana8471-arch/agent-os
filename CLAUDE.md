@@ -104,10 +104,10 @@ Agents are configured with specific models based on task complexity:
 | spec-initializer | ✓ | ✓ | ✓ | - | - | - | - | - |
 | spec-shaper | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | - |
 | spec-writer | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | - |
-| spec-verifier | ✓ | ✓ | ✓ | ✓ | ✓ | - | - | - |
+| spec-verifier | ✓ | ✓ | ✓ | ✓ | - | - | - | - |
 | tasks-list-creator | ✓ | ✓ | ✓ | ✓ | ✓ | - | - | - |
 | implementer | ✓ | ✓ | ✓ | ✓ | ✓ | - | - | ✓ |
-| implementation-verifier | ✓ | ✓ | ✓ | ✓ | ✓ | - | - | ✓ |
+| implementation-verifier | ✓ | ✓ | ✓ | ✓ | - | - | - | ✓ |
 | code-reviewer | ✓ | ✓ | ✓ | ✓ | - | ✓ | ✓ | - |
 | test-strategist | ✓ | ✓ | ✓ | ✓ | - | ✓ | ✓ | - |
 | documentation-writer | ✓ | ✓ | ✓ | ✓ | - | ✓ | ✓ | - |

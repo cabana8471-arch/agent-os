@@ -42,6 +42,7 @@ Provide the documentation-writer with:
 - The tasks file: `agent-os/specs/[spec-path]/tasks.md`
 - The implementation files that were created/modified
 - The tech stack: `agent-os/product/tech-stack.md` (if exists)
+- Standards context (see Standards section below)
 
 Instruct the subagent to:
 1. Analyze the implemented code for documentation needs
