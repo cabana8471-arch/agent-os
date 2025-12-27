@@ -77,6 +77,12 @@ validate_profile_name() {
         return 1
     fi
 
+    # M15 Fix: Whitelist pattern - only allow alphanumeric, hyphens, and underscores (not at start)
+    if [[ ! "$name" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
+        print_error "Profile name must start with a letter and contain only letters, numbers, hyphens, and underscores"
+        return 1
+    fi
+
     # Check that resolved path stays within profiles directory
     local resolved_path
     resolved_path=$(cd "$PROFILES_DIR" 2>/dev/null && mkdir -p "$name" 2>/dev/null && cd "$name" && pwd)
@@ -206,10 +212,12 @@ select_inheritance() {
 
         echo ""
 
-        # Retry loop for invalid input
+        # M16 Fix: Retry loop for invalid input with explicit selection reset
         local max_attempts=3
         local attempt=0
+        local selection=""  # Initialize selection before loop
         while [[ $attempt -lt $max_attempts ]]; do
+            selection=""  # Reset selection at start of each iteration
             read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
 
             if [[ "$selection" == "1" ]]; then
@@ -283,10 +291,12 @@ select_copy_source() {
 
         echo ""
 
-        # Retry loop for invalid input
+        # M16 Fix: Retry loop for invalid input with explicit selection reset
         local max_attempts=3
         local attempt=0
+        local selection=""  # Initialize selection before loop
         while [[ $attempt -lt $max_attempts ]]; do
+            selection=""  # Reset selection at start of each iteration
             read -p "$(echo -e "${BLUE}Enter selection (1-$((${#profiles[@]}+1))): ${NC}")" selection
 
             if [[ "$selection" == "1" ]]; then
@@ -390,7 +400,8 @@ create_profile_structure() {
             print_status "Copying from profile: $COPY_FROM"
             cp -rp "$PROFILES_DIR/$COPY_FROM" "$profile_path"
 
-            # Update profile-config.yml
+            # M17 Note: Update profile-config.yml using heredoc
+            # Atomic writes not needed for new profile creation (no existing file to corrupt)
             cat > "$profile_path/profile-config.yml" << EOF
 inherits_from: false
 
@@ -420,7 +431,8 @@ EOF
             mkdir -p "$profile_path/workflows/planning"
             mkdir -p "$profile_path/workflows/specification"
 
-            # Create profile-config.yml
+            # M17 Note: Create profile-config.yml using heredoc
+            # Atomic writes not needed for new profile creation (no existing file to corrupt)
             if [[ -n "$INHERIT_FROM" ]]; then
                 cat > "$profile_path/profile-config.yml" << EOF
 inherits_from: $INHERIT_FROM

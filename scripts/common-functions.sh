@@ -294,6 +294,7 @@ get_yaml_array() {
 # -----------------------------------------------------------------------------
 
 # Create directory if it doesn't exist (unless in dry-run mode)
+# Returns: 0 on success (or dry-run), 1 on failure
 ensure_dir() {
     local dir=$1
 
@@ -301,11 +302,16 @@ ensure_dir() {
         if [[ ! -d "$dir" ]]; then
             print_verbose "Would create directory: $dir"
         fi
+        return 0
     else
         if [[ ! -d "$dir" ]]; then
-            mkdir -p "$dir"
+            if ! mkdir -p "$dir"; then
+                print_error "Failed to create directory: $dir"
+                return 1
+            fi
             print_verbose "Created directory: $dir"
         fi
+        return 0
     fi
 }
 
@@ -384,10 +390,9 @@ write_file() {
     fi
 
     # Create temp file in the same directory as destination for atomic mv
-    local dest_dir
-    dest_dir=$(dirname "$dest")
+    # M2 Fix: Reuse dest_dir_path instead of duplicate dirname call
     local temp_file
-    temp_file=$(mktemp "${dest_dir}/.tmp.XXXXXX") || {
+    temp_file=$(mktemp "${dest_dir_path}/.tmp.XXXXXX") || {
         print_error "Failed to create temporary file for: $dest"
         return 1
     }
@@ -566,8 +571,13 @@ get_profile_files() {
         # Add exclusion patterns from this profile
         if [[ -f "$profile_config" ]]; then
             local patterns=$(get_yaml_array "$profile_config" "exclude_inherited_files")
+            # M5 Fix: Only append if patterns is non-empty, and handle first append without leading newline
             if [[ -n "$patterns" ]]; then
-                excluded_patterns="$excluded_patterns"$'\n'"$patterns"
+                if [[ -z "$excluded_patterns" ]]; then
+                    excluded_patterns="$patterns"
+                else
+                    excluded_patterns="$excluded_patterns"$'\n'"$patterns"
+                fi
             fi
 
             local inherits_from=$(get_yaml_value "$profile_config" "inherits_from" "default")
@@ -714,6 +724,7 @@ process_conditionals() {
     local should_include=true
     local stack_should_include=()
     local stack_tag_type=()  # Track IF vs UNLESS for validation
+    local tag_mismatch_detected=false  # M4 Fix: Track tag mismatches for error reporting
 
     while IFS= read -r line; do
         # Check for IF tags
@@ -799,6 +810,7 @@ process_conditionals() {
                 local expected_type="${stack_tag_type[$last_type_index]}"
                 if [[ "$expected_type" != "IF" ]]; then
                     print_warning "Mismatched template tags: {{ENDIF $flag_name}} closes {{UNLESS ...}}"
+                    tag_mismatch_detected=true  # M4 Fix: Track mismatch
                 fi
                 # Use array slice to avoid sparse array issues
                 stack_tag_type=("${stack_tag_type[@]:0:$last_type_index}")
@@ -828,6 +840,7 @@ process_conditionals() {
                 local expected_type="${stack_tag_type[$last_type_index]}"
                 if [[ "$expected_type" != "UNLESS" ]]; then
                     print_warning "Mismatched template tags: {{ENDUNLESS $flag_name}} closes {{IF ...}}"
+                    tag_mismatch_detected=true  # M4 Fix: Track mismatch
                 fi
                 # Use array slice to avoid sparse array issues
                 stack_tag_type=("${stack_tag_type[@]:0:$last_type_index}")
@@ -862,6 +875,12 @@ process_conditionals() {
     fi
 
     echo "$result"
+
+    # M4 Fix: Return error code if tag mismatch was detected
+    if [[ "$tag_mismatch_detected" == true ]]; then
+        return 1
+    fi
+    return 0
 }
 
 # Maximum recursion depth for workflow processing
@@ -1549,11 +1568,14 @@ compile_command() {
 # Parse a semantic version string into components
 # Args: $1=version string (e.g., "2.1.3" or "2.1.0-beta")
 # Output: "major minor patch prerelease" on stdout
+# M18 Fix: Enhanced edge case handling with warnings
 parse_semver() {
     local version=$1
+    local original_version=$1  # M18: Keep original for warning message
 
     # Handle empty version
     if [[ -z "$version" ]]; then
+        print_verbose "parse_semver: empty version string, defaulting to 0.0.0"
         echo "0 0 0 "
         return
     fi
@@ -1563,6 +1585,11 @@ parse_semver() {
     if [[ "$version" == *-* ]]; then
         prerelease="${version#*-}"
         version="${version%%-*}"
+    fi
+
+    # M18 Fix: Validate version format (should be X.Y.Z pattern)
+    if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+        print_warning "parse_semver: invalid version format '$original_version', using defaults for non-numeric parts"
     fi
 
     # Parse major.minor.patch
@@ -1576,10 +1603,19 @@ parse_semver() {
     minor=${minor:-0}
     patch=${patch:-0}
 
-    # Ensure numeric values
-    [[ "$major" =~ ^[0-9]+$ ]] || major=0
-    [[ "$minor" =~ ^[0-9]+$ ]] || minor=0
-    [[ "$patch" =~ ^[0-9]+$ ]] || patch=0
+    # Ensure numeric values (with warning if conversion happens)
+    if [[ ! "$major" =~ ^[0-9]+$ ]]; then
+        print_verbose "parse_semver: major component '$major' is not numeric, defaulting to 0"
+        major=0
+    fi
+    if [[ ! "$minor" =~ ^[0-9]+$ ]]; then
+        print_verbose "parse_semver: minor component '$minor' is not numeric, defaulting to 0"
+        minor=0
+    fi
+    if [[ ! "$patch" =~ ^[0-9]+$ ]]; then
+        print_verbose "parse_semver: patch component '$patch' is not numeric, defaulting to 0"
+        patch=0
+    fi
 
     echo "$major $minor $patch $prerelease"
 }
@@ -2030,9 +2066,12 @@ create_standard_skill() {
     ensure_dir "$skill_dir"
 
     # Get the skill template from the profile
-    local template_file=$(get_profile_file "$profile" "claude-code-skill-template.md" "$base_dir")
-    if [[ ! -f "$template_file" ]]; then
-        print_error "Skill template not found: $template_file"
+    # M6 Fix: Check return code and handle empty template path
+    local template_file
+    template_file=$(get_profile_file "$profile" "claude-code-skill-template.md" "$base_dir")
+    local get_result=$?
+    if [[ $get_result -ne 0 ]] || [[ -z "$template_file" ]] || [[ ! -f "$template_file" ]]; then
+        print_error "Skill template not found for profile: $profile (claude-code-skill-template.md)"
         return 1
     fi
 

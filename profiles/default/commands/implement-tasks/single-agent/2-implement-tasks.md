@@ -11,7 +11,7 @@ IF all tasks are now marked as done (with `- [x]`) in tasks.md, display this mes
 ```
 All tasks have been implemented: `agent-os/specs/[spec-path]/tasks.md`.
 
-NEXT STEP 👉 Run `3-code-review.md` to review the code before verification.
+NEXT STEP 👉 Run `/implement-tasks` and select `3-code-review` phase to review the code before verification.
 ```
 
 IF there are still tasks in tasks.md that have yet to be implemented (marked unfinished with `- [ ]`) then display this message to user:

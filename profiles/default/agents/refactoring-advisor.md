@@ -26,6 +26,7 @@ IMPORTANT: Ensure your refactoring recommendations align with the user's preferr
 {{standards/global/*}}
 {{standards/backend/*}}
 {{standards/frontend/*}}
+{{standards/testing/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
 
 ## Issue Tracking

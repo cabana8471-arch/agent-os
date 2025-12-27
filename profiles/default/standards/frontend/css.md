@@ -1,6 +1,6 @@
 ## CSS best practices
 
-> **Related Standards**: See `components.md` for component styling patterns, `responsive.md` for responsive design methodology, `performance.md` for CSS optimization.
+> **Related Standards**: See `frontend/components.md` for component styling patterns, `frontend/responsive.md` for responsive design methodology, `global/performance.md` for CSS optimization.
 
 - **Consistent Methodology**: Apply and stick to the project's consistent CSS methodology (Tailwind, BEM, utility classes, CSS modules, etc.) across the entire project
 - **Avoid Overriding Framework Styles**: Work with your framework's patterns rather than fighting against them with excessive overrides

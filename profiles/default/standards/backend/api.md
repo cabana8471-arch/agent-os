@@ -1,6 +1,6 @@
 ## API endpoint standards and conventions
 
-> **Related Standards**: See `validation.md` for input validation, `error-handling.md` for error response patterns, `security.md` for authentication/authorization.
+> **Related Standards**: See `global/validation.md` for input validation, `global/error-handling.md` for error response patterns, `global/security.md` for authentication/authorization.
 
 - **RESTful Design**: Follow REST principles with clear resource-based URLs and appropriate HTTP methods (GET, POST, PUT, PATCH, DELETE)
 - **Consistent Naming**: Use consistent, lowercase, hyphenated or underscored naming conventions for endpoints across the API

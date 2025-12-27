@@ -2,7 +2,7 @@
 name: feature-analyst
 description: Use proactively to discover existing features, propose new features based on patterns, and prevent duplicate functionality
 tools: Write, Read, Bash, Grep, Glob, WebFetch
-color: cyan
+color: blue
 model: opus
 ---
 

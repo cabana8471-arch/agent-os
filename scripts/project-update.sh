@@ -766,6 +766,8 @@ prompt_update_confirmation() {
     fi
     echo ""
 
+    # M12 Fix: Initialize REPLY before read to handle timeout case
+    REPLY=""
     # Timeout after 60 seconds to prevent hanging in CI/CD environments
     if ! read -t 60 -p "Do you want to proceed? (y/n): " -n 1 -r; then
         echo
@@ -837,20 +839,36 @@ perform_update_cleanup() {
         }
         print_verbose "Created backup directory: $_UPDATE_BACKUP_DIR"
 
-        # Backup existing directories before deletion
+        # M13 Fix: Backup existing directories before deletion with verification
+        local backup_failed=false
         if [[ -d "$PROJECT_DIR/agent-os/standards" ]]; then
-            cp -rp "$PROJECT_DIR/agent-os/standards" "$_UPDATE_BACKUP_DIR/" 2>/dev/null || true
+            if ! cp -rp "$PROJECT_DIR/agent-os/standards" "$_UPDATE_BACKUP_DIR/" 2>/dev/null; then
+                print_warning "Failed to backup agent-os/standards"
+                backup_failed=true
+            fi
         fi
         if [[ -d "$PROJECT_DIR/agent-os/commands" ]]; then
-            cp -rp "$PROJECT_DIR/agent-os/commands" "$_UPDATE_BACKUP_DIR/" 2>/dev/null || true
+            if ! cp -rp "$PROJECT_DIR/agent-os/commands" "$_UPDATE_BACKUP_DIR/" 2>/dev/null; then
+                print_warning "Failed to backup agent-os/commands"
+                backup_failed=true
+            fi
         fi
         if [[ -d "$PROJECT_DIR/.claude/agents/agent-os" ]]; then
             mkdir -p "$_UPDATE_BACKUP_DIR/.claude/agents"
-            cp -rp "$PROJECT_DIR/.claude/agents/agent-os" "$_UPDATE_BACKUP_DIR/.claude/agents/" 2>/dev/null || true
+            if ! cp -rp "$PROJECT_DIR/.claude/agents/agent-os" "$_UPDATE_BACKUP_DIR/.claude/agents/" 2>/dev/null; then
+                print_warning "Failed to backup .claude/agents/agent-os"
+                backup_failed=true
+            fi
         fi
         if [[ -d "$PROJECT_DIR/.claude/commands/agent-os" ]]; then
             mkdir -p "$_UPDATE_BACKUP_DIR/.claude/commands"
-            cp -rp "$PROJECT_DIR/.claude/commands/agent-os" "$_UPDATE_BACKUP_DIR/.claude/commands/" 2>/dev/null || true
+            if ! cp -rp "$PROJECT_DIR/.claude/commands/agent-os" "$_UPDATE_BACKUP_DIR/.claude/commands/" 2>/dev/null; then
+                print_warning "Failed to backup .claude/commands/agent-os"
+                backup_failed=true
+            fi
+        fi
+        if [[ "$backup_failed" == true ]]; then
+            print_warning "Some backups failed - rollback may be incomplete if errors occur"
         fi
         print_verbose "Backup created at: $_UPDATE_BACKUP_DIR"
     fi
