@@ -228,6 +228,6 @@ export default env
 
 ## Related Standards
 
-- {{standards/global/tech-stack}} - Framework and runtime versions
-- {{standards/global/deployment}} - Production environment setup
-- {{standards/backend/api}} - API configuration and secrets
+- `global/tech-stack.md` - Framework and runtime versions
+- `global/deployment.md` - Production environment setup
+- `backend/api.md` - API configuration and secrets

@@ -6,6 +6,7 @@ exclude_inherited_files:
   - standards/global/tech-stack.md
   - standards/global/coding-style.md
   - standards/frontend/components.md
+  - standards/frontend/routing.md
   - standards/backend/api.md
   - standards/testing/test-writing.md
 
@@ -15,4 +16,4 @@ exclude_inherited_files:
   - standards/backend/queries.md
 
   # NOTE: project-structure.md, environment.md are Next.js-specific and don't exist
-  # in default profile. routing.md exists in default but is overridden with Next.js version.
+  # in default profile. routing.md is excluded above and overridden with Next.js version.

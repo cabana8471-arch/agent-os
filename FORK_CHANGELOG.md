@@ -4,6 +4,59 @@ This file documents all modifications made in this fork of Agent OS.
 
 ---
 
+## [2025-12-27 14:00] NextJS Profile Standards/Workflows Fixes
+
+### Description
+
+Fixed 5 issues from "PARTEA 2: PROBLEME STANDARDE/WORKFLOWS/PROFILE" of the comprehensive analysis. These fixes address missing NextJS profile overrides, broken template references, and configuration inconsistencies.
+
+### Issues Fixed
+
+| # | Severity | Location | Problem | Fix |
+|---|----------|----------|---------|-----|
+| NEW-P-H1 | HIGH | profiles/nextjs/profile-config.yml | Profile excludes models.md, migrations.md, queries.md but has no local overrides | Created Prisma-specific override files |
+| NEW-P-H2 | HIGH | profiles/nextjs/standards/frontend/data-fetching.md | References non-existent `{{standards/frontend/streaming}}` | Created streaming.md standard |
+| NEW-P-M1 | MEDIUM | profiles/nextjs/standards/global/deployment.md | Uses `{{standards/...}}` template syntax in standard file | Changed to markdown format |
+| NEW-P-M2 | MEDIUM | profiles/nextjs/standards/global/environment.md | Uses `{{standards/...}}` template syntax in Related Standards | Changed to markdown format |
+| NEW-P-M3 | MEDIUM | profiles/nextjs/profile-config.yml | Comment says routing.md is override but not in exclude list | Added routing.md to exclude_inherited_files |
+
+### New Files Created
+
+| File | Description | Lines |
+|------|-------------|-------|
+| `profiles/nextjs/standards/backend/models.md` | Prisma schema design, relationships, indexes, TypeScript types | ~200 |
+| `profiles/nextjs/standards/backend/migrations.md` | Prisma migration workflow, zero-downtime patterns, seeding | ~220 |
+| `profiles/nextjs/standards/backend/queries.md` | Prisma query patterns, N+1 prevention, transactions, performance | ~280 |
+| `profiles/nextjs/standards/frontend/streaming.md` | React Suspense, loading.tsx, skeleton components, streaming SSR | ~230 |
+
+### Modified Files
+
+| File | Modifications |
+|------|---------------|
+| `profiles/nextjs/standards/frontend/data-fetching.md` | Fixed Related Standards to use markdown format instead of template syntax |
+| `profiles/nextjs/standards/global/deployment.md` | Fixed Related Standards to use markdown format instead of template syntax |
+| `profiles/nextjs/standards/global/environment.md` | Fixed Related Standards to use markdown format instead of template syntax |
+| `profiles/nextjs/profile-config.yml` | Added routing.md to exclude_inherited_files, updated comment |
+
+### Verification Results
+
+✅ All new standard files follow consistent format with Related Standards section
+✅ Template syntax `{{standards/...}}` removed from all standard files
+✅ Profile configuration consistent - all overridden files now in exclude_inherited_files
+✅ Streaming standard properly referenced in data-fetching.md
+
+### Statistics
+
+| Metric | Count |
+|--------|-------|
+| HIGH severity issues fixed | 2 |
+| MEDIUM severity issues fixed | 3 |
+| New files created | 4 |
+| Files modified | 4 |
+| Lines added | ~930 |
+
+---
+
 ## [2025-12-27 12:30] Bash Scripts LOW Severity Fixes - Style & Documentation
 
 ### Description

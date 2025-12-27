@@ -354,6 +354,6 @@ export default async function Page() {
 
 ## Related Standards
 
-- {{standards/backend/api}} - API route implementation
-- {{standards/frontend/server-components}} - Server Component patterns
-- {{standards/frontend/streaming}} - Suspense and streaming patterns
+- `backend/api.md` - API route implementation
+- `frontend/server-components.md` - Server Component patterns
+- `frontend/streaming.md` - Suspense and streaming patterns

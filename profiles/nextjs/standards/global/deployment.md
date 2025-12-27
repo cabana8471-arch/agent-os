@@ -282,6 +282,6 @@ export function middleware(request: NextRequest) {
 
 ## Related Standards
 
-- {{standards/global/environment}} - Environment variable management
-- {{standards/backend/api}} - API configuration
-- {{standards/frontend/performance}} - Performance optimization before deploy
+- `global/environment.md` - Environment variable management
+- `backend/api.md` - API configuration
+- `frontend/performance.md` - Performance optimization before deploy
