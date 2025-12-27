@@ -251,3 +251,16 @@ If any phase fails, follow the error recovery workflow for detailed guidance:
 4. **Partial Completion**: Can resume from last pending task group using orchestration.yml state
 5. **Code Review Rejection**: Fix critical issues before proceeding to next task group
 6. **Test Failures**: Run error recovery workflow Category 1, then retry verification
+
+## NEXT STEP
+
+After orchestration is complete:
+
+1. **If all verifications passed**: The feature is ready for deployment or further testing
+2. **If issues were found**: Review the verification report and address any CRITICAL or HIGH issues
+3. **For additional features**: Run `/shape-spec` or `/create-tasks` for the next feature in the roadmap
+
+**Related commands:**
+- `/review-code` - For additional code review passes
+- `/test-strategy` - For comprehensive test planning
+- `/generate-docs` - To document the implemented features

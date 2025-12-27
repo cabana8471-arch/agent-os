@@ -184,12 +184,26 @@ get_indent_level() {
 # More robust: handles quotes, different spacing, tabs, inline comments
 # Args: $1=file path, $2=key name, $3=default value
 # Returns: the value or default if not found
+#
+# AOS-0042 Fix: Added empty key validation
+# Edge cases handled:
+#   - Empty file path: Returns default
+#   - Empty key: Returns default (prevents matching all lines)
+#   - Missing file: Returns default
+#   - Key not found: Returns default
 get_yaml_value() {
     local file=$1
     local key=$2
     local default=$3
 
     if [[ ! -f "$file" ]]; then
+        echo "$default"
+        return
+    fi
+
+    # AOS-0042 Fix: Handle empty key - would match all lines otherwise
+    if [[ -z "$key" ]]; then
+        print_verbose "get_yaml_value: empty key provided, returning default"
         echo "$default"
         return
     fi
@@ -777,6 +791,19 @@ replace_playwright_tools() {
 
 # Process conditional compilation tags ({{IF}}, {{UNLESS}}, {{ENDIF}}, {{ENDUNLESS}})
 # Ignores {{orchestrated_standards}} and other placeholders
+#
+# AOS-0038/0040 Fix: Function state management documentation
+# State Variables:
+#   - nesting_level: Tracks current depth of nested conditionals (reset to 0 at start)
+#   - should_include: Boolean for whether current block content should be included
+#   - stack_should_include: Stack array storing parent include states (for nesting)
+#   - stack_tag_type: Stack array tracking IF vs UNLESS for mismatch detection
+#   - tag_mismatch_detected: Flag set when ENDIF closes an UNLESS or vice versa
+#
+# Stack Behavior:
+#   - Opening tag (IF/UNLESS): Push current should_include, compute new value
+#   - Closing tag (ENDIF/ENDUNLESS): Validate matching tag type, pop from stack
+#   - Empty stack on ENDIF/ENDUNLESS: Warning logged, continue processing
 #
 # Limitations:
 #   - Nesting is supported but deeply nested conditions (>10 levels) may behave unexpectedly
@@ -1468,6 +1495,21 @@ process_phase_tags() {
 }
 
 # Compile agent file with all replacements
+#
+# AOS-0045 Documentation: Sequential Replacement Processing
+# Performance Note: This function performs multiple sequential text replacements:
+#   1. Role data replacements (custom template variables)
+#   2. Conditional tag processing (IF/UNLESS blocks)
+#   3. Workflow reference replacements
+#   4. Protocol reference replacements
+#   5. Standards reference replacements
+#   6. PHASE tag replacements (if phase_mode="embed")
+#   7. Playwright tool expansion
+#
+# Each replacement uses perl for reliable handling of special characters and
+# multiline content. While this is O(n*m) where n=content size and m=replacement types,
+# it ensures correctness over performance. For large files, consider pre-processing
+# or caching compiled agents.
 compile_agent() {
     local source_file=$1
     local dest_file=$2
@@ -1705,6 +1747,11 @@ compile_command() {
 # Args: $1=version string (e.g., "2.1.3" or "2.1.0-beta")
 # Output: "major minor patch prerelease" on stdout
 # M18 Fix: Enhanced edge case handling with warnings
+#
+# AOS-0047 Documentation: Output format is space-delimited "major minor patch prerelease"
+# The trailing space after patch when prerelease is empty is intentional for consistent
+# parsing with $(read major minor patch prerelease <<< "$output"). This allows callers
+# to use the same parsing logic regardless of whether prerelease exists.
 parse_semver() {
     local version=$1
     local original_version=$1  # M18: Keep original for warning message

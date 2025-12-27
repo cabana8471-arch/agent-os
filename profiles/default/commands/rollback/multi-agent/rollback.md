@@ -9,10 +9,17 @@ This command helps you safely revert changes when implementation has gone wrong,
 
 Delegate this task to a **implementer** subagent.
 
+**AOS-0064 Note**: The implementer agent is used for rollback because:
+1. It has write access to all code and configuration files
+2. It understands the codebase structure from implementation
+3. Rollback requires the same git and file manipulation skills as implementation
+4. It can verify the rollback by running tests and checking app functionality
+
 **Provide to the subagent:**
 - The target state to roll back to (commit hash, backup description, or "last known good")
-- What triggered the need for rollback
-- Any work that should be preserved if possible
+- What triggered the need for rollback (failed tests, deployment failure, spec change)
+- Any work that should be preserved if possible (specific files, uncommitted changes)
+- The spec path if rolling back a specific feature: `agent-os/specs/[spec-path]`
 
 **Instruct the subagent to:**
 1. Follow the rollback workflow: `{{workflows/implementation/rollback}}`

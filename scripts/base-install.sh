@@ -497,8 +497,15 @@ prompt_overwrite_choice() {
 # Create backup of existing installation
 # Removes any previous backup and creates a new one at ~/agent-os.backup
 # Note: Only one backup is kept at a time; multiple updates will overwrite
+#
+# AOS-0050 Fix: Existence check before deletion
+# We check if the backup directory exists before attempting to remove it.
+# While rm -rf with a non-existent path is safe, explicit checks:
+#   - Make intent clearer in the code
+#   - Avoid unnecessary filesystem operations
+#   - Provide consistent pattern across all backup-related code
 create_backup() {
-    # Remove previous backup if exists
+    # Remove previous backup if exists (AOS-0050: explicit existence check)
     if [[ -d "$BASE_DIR.backup" ]]; then
         rm -rf "$BASE_DIR.backup"
     fi

@@ -180,6 +180,12 @@ get_profile_name() {
         fi
 
         # Check if profile already exists
+        # AOS-0054 Note: This check is not atomic with profile creation below.
+        # A race condition exists if another process creates the profile between
+        # this check and mkdir. However, this is acceptable because:
+        #   1. Profile creation is a manual, interactive process
+        #   2. mkdir -p will succeed even if directory exists (no harm done)
+        #   3. The user will see the final result and can correct if needed
         if [[ -d "$PROFILES_DIR/$PROFILE_NAME" ]]; then
             print_error "Profile '$PROFILE_NAME' already exists"
             echo "Please choose a different name"
@@ -476,8 +482,12 @@ EOF
             mkdir -p "$profile_path/workflows/planning"
             mkdir -p "$profile_path/workflows/specification"
 
-            # M17 Note: Create profile-config.yml using heredoc
-            # Atomic writes not needed for new profile creation (no existing file to corrupt)
+            # M17/AOS-0058 Note: Create profile-config.yml using heredoc instead of write_file()
+            # Rationale for using cat heredoc instead of write_file():
+            #   1. This is a new file creation, not modification - no atomicity needed
+            #   2. Content is simple YAML with no special characters requiring escaping
+            #   3. Heredoc is more readable for multi-line content with variable expansion
+            #   4. write_file() is designed for content from variables, not inline templates
             if [[ -n "$INHERIT_FROM" ]]; then
                 cat > "$profile_path/profile-config.yml" << EOF
 inherits_from: $INHERIT_FROM

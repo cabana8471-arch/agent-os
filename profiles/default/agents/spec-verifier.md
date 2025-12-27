@@ -49,4 +49,8 @@ If you encounter issues during spec verification:
 1. **Missing Spec Files**: Document which files are missing, recommend creation before proceeding
 2. **Incomplete Q&A Data**: Flag as verification gap, recommend re-running requirements gathering
 3. **Visual Analysis Failure**: Proceed with text verification, note visual check was skipped
-4. **Conflicting Information**: Document all conflicts in verification report with recommendations - assign Issue IDs using `{{protocols/issue-tracking}}`
+4. **Conflicting Information**: Document all conflicts in verification report with recommendations
+
+**AOS-0059 Note**: When documenting conflicts or issues, assign unique Issue IDs from the Issue Tracking Protocol above (e.g., QUAL-001, ARCH-002). Include the Issue ID in both:
+   - The verification report file (`agent-os/specs/[spec]/verification/`)
+   - The conversation summary returned to the user
