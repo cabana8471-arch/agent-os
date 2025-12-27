@@ -67,11 +67,13 @@ bootstrap_print "Initializing..."
 download_common_functions
 
 # Clean up temp directory on exit and restore cursor
+# This trap runs on normal exit, errors, and interrupts (Ctrl+C)
+# Ensures: 1) No orphan temp files, 2) Terminal cursor visible after exit
 cleanup() {
     if [[ -d "$TEMP_DIR" ]]; then
         rm -rf "$TEMP_DIR"
     fi
-    # Always restore cursor on exit
+    # Always restore cursor on exit (hidden during spinner animation)
     tput cnorm 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -111,7 +113,11 @@ download_file() {
     fi
 }
 
-# Define exclusion patterns
+# Define exclusion patterns for files not to download
+# - base-install.sh: Self-reference, already running
+# - old-versions/*: Historical versions, not needed for fresh install
+# - .git*: Git metadata files
+# - .github/*: GitHub-specific configuration
 EXCLUSIONS=(
     "scripts/base-install.sh"
     "old-versions/*"
@@ -119,7 +125,10 @@ EXCLUSIONS=(
     ".github/*"
 )
 
-# Check if a file should be excluded
+# Check if a file should be excluded from download
+# Args: $1=file path to check
+# Returns: 0 if file should be excluded, 1 otherwise
+# Supports exact match and wildcard (*) patterns
 should_exclude() {
     local file_path=$1
 
@@ -282,9 +291,11 @@ spinner() {
 # -----------------------------------------------------------------------------
 
 # Install all files from repository
+# Uses background spinner for visual feedback during download
 install_all_files() {
     if [[ "$DRY_RUN" != "true" ]]; then
         # Start spinner in background
+        # Initialize spinner_pid to empty - will be set if spinner starts
         spinner_pid=""
         if [[ "$VERBOSE" != "true" ]]; then
             # Hide cursor before starting spinner
@@ -450,8 +461,10 @@ prompt_overwrite_choice() {
 }
 
 # Create backup of existing installation
+# Removes any previous backup and creates a new one at ~/agent-os.backup
+# Note: Only one backup is kept at a time; multiple updates will overwrite
 create_backup() {
-    # Backup existing installation
+    # Remove previous backup if exists
     if [[ -d "$BASE_DIR.backup" ]]; then
         rm -rf "$BASE_DIR.backup"
     fi
@@ -521,8 +534,10 @@ full_update() {
     print_status "Updating version number in config.yml..."
     if [[ -f "$BASE_DIR/config.yml" ]] && [[ -n "$latest_version" ]]; then
         # Use sed to update only the version line
+        # Note: sed -i.bak creates backup for macOS compatibility (BSD sed requires suffix)
+        # We immediately remove the backup since we have ~/agent-os.backup
         sed -i.bak "s/^version:.*/version: $latest_version/" "$BASE_DIR/config.yml"
-        rm -f "$BASE_DIR/config.yml.bak"
+        rm -f "$BASE_DIR/config.yml.bak"  # Clean up sed backup file
         echo "✓ Updated version to $latest_version in config.yml"
     fi
     echo ""

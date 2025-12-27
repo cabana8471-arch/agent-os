@@ -31,7 +31,11 @@ fi
 # -----------------------------------------------------------------------------
 # Temporary File Tracking and Cleanup
 # -----------------------------------------------------------------------------
-# Array to track temporary files for cleanup
+# This module manages temporary files created during script execution.
+# All temp files are automatically cleaned up on script exit (EXIT, INT, TERM).
+# Usage: Call create_temp_file() to get a tracked temp file path.
+#        Call remove_temp_file() to manually remove before exit.
+# Array to track temporary files for cleanup (internal use only)
 declare -a _AGENT_OS_TEMP_FILES=()
 
 # Cleanup function to remove all tracked temporary files
@@ -87,12 +91,17 @@ remove_temp_file() {
 # -----------------------------------------------------------------------------
 # Output Functions
 # -----------------------------------------------------------------------------
+# Note: These functions use echo -e for ANSI color escape sequences.
+# This is bash-specific; for POSIX sh compatibility, use printf instead.
+# Agent OS requires bash 4.0+, so echo -e is safe here.
 
 # Print colored output
+# Usage: print_color "$COLOR" "message text"
+# Note: Uses $* to join all arguments as a single string for proper color wrapping
 print_color() {
     local color=$1
     shift
-    echo -e "${color}$@${NC}"
+    echo -e "${color}$*${NC}"
 }
 
 # Print section header
@@ -123,8 +132,9 @@ print_error() {
 }
 
 # Print verbose message (only in verbose mode)
+# Uses default pattern to handle potentially unset VERBOSE variable
 print_verbose() {
-    if [[ "$VERBOSE" == "true" ]]; then
+    if [[ "${VERBOSE:-false}" == "true" ]]; then
         echo "[VERBOSE] $1" >&2
     fi
 }
@@ -134,6 +144,10 @@ print_verbose() {
 # -----------------------------------------------------------------------------
 
 # Normalize input to lowercase, replace spaces/underscores with hyphens, remove punctuation
+# Usage: local name=$(normalize_name "My Profile Name")
+# Returns: "my-profile-name"
+# Note: Only alphanumeric characters and hyphens are preserved in output.
+#       Empty input returns empty string.
 normalize_name() {
     local input=$1
     echo "$input" | tr '[:upper:]' '[:lower:]' | sed 's/[ _]/-/g' | sed 's/[^a-z0-9-]//g'
@@ -142,13 +156,23 @@ normalize_name() {
 # -----------------------------------------------------------------------------
 # Improved YAML Parsing Functions (More Robust)
 # -----------------------------------------------------------------------------
+# Limitations:
+# - Only supports simple key: value and key: [array] formats
+# - Nested structures (indented blocks) are not fully parsed
+# - Multi-line strings (| or >) are not supported
+# - Anchors (&) and aliases (*) are not supported
+# - Use jq or yq for complex YAML processing
 
 # Normalize YAML line (handle tabs, trim spaces, etc.)
+# Converts tabs to 4 spaces and removes trailing whitespace
 normalize_yaml_line() {
     echo "$1" | sed 's/\t/    /g' | sed 's/[[:space:]]*$//'
 }
 
 # Get indentation level (counts spaces/tabs at beginning)
+# Usage: local indent=$(get_indent_level "    key: value")
+# Returns: number of leading spaces (tabs converted to 4 spaces)
+# Note: Empty lines return 0
 get_indent_level() {
     local line="$1"
     local normalized=$(echo "$line" | sed 's/\t/    /g')
@@ -298,10 +322,11 @@ get_yaml_array() {
 
 # Create directory if it doesn't exist (unless in dry-run mode)
 # Returns: 0 on success (or dry-run), 1 on failure
+# Note: Uses DRY_RUN default to handle potentially unset variable
 ensure_dir() {
     local dir=$1
 
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
         if [[ ! -d "$dir" ]]; then
             print_verbose "Would create directory: $dir"
         fi
@@ -336,7 +361,7 @@ copy_file() {
         return 1
     fi
 
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
         echo "$dest"
     else
         local dest_dir
@@ -368,11 +393,12 @@ copy_file() {
 # Uses atomic write pattern (temp file + mv) to prevent corruption
 # Args: $1=content, $2=destination file
 # Returns: 0 on success, 1 on failure
+# Note: Uses DRY_RUN default to handle potentially unset variable
 write_file() {
     local content=$1
     local dest=$2
 
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
         echo "$dest"
         return 0
     fi
@@ -430,6 +456,10 @@ write_file() {
 }
 
 # Check if file should be skipped during update
+# Args: $1=file path, $2=overwrite_all flag, $3=overwrite_type flag, $4=file type
+# Returns: 0 if file should be skipped, 1 if file should be updated
+# Note: Return value is inverted from typical convention (0=skip, 1=don't skip)
+#       for use in if statements: if should_skip_file ...; then skip; fi
 should_skip_file() {
     local file=$1
     local overwrite_all=$2

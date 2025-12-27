@@ -799,9 +799,11 @@ prompt_update_confirmation() {
 }
 
 # Global variable to track backup directory for cleanup on success
+# Used by cleanup_backup_on_success and rollback_from_backup
 _UPDATE_BACKUP_DIR=""
 
 # Remove backup directory after successful update
+# Called when update completes without errors; no rollback needed
 cleanup_backup_on_success() {
     if [[ -n "$_UPDATE_BACKUP_DIR" ]] && [[ -d "$_UPDATE_BACKUP_DIR" ]]; then
         rm -rf "$_UPDATE_BACKUP_DIR"
@@ -810,6 +812,8 @@ cleanup_backup_on_success() {
 }
 
 # Restore from backup on failure
+# Called by ERR trap when update fails after cleanup has started
+# Restores: standards, commands, agents, and Claude Code commands
 rollback_from_backup() {
     if [[ -n "$_UPDATE_BACKUP_DIR" ]] && [[ -d "$_UPDATE_BACKUP_DIR" ]]; then
         print_warning "Update failed! Rolling back from backup..."
@@ -839,6 +843,8 @@ rollback_from_backup() {
 
 # Perform cleanup before update - delete everything except specs/ and product/
 # Creates backup first for rollback on failure
+# Preserves: agent-os/specs/*, agent-os/product/*
+# Removes: standards/, commands/, .claude/agents/agent-os/, .claude/commands/agent-os/, skills
 perform_update_cleanup() {
     if [[ "$DRY_RUN" == "true" ]]; then
         print_warning "Dry run: Would prepare for update..."

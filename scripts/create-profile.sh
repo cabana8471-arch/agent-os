@@ -132,6 +132,9 @@ validate_profile_exists() {
 # Profile Functions
 # -----------------------------------------------------------------------------
 
+# Get list of all available profiles in the profiles directory
+# Output: Space-separated list of profile names
+# Returns: 0 on success, 1 if profiles directory not found
 get_available_profiles() {
     local profiles=()
 
@@ -192,6 +195,9 @@ get_profile_name() {
 # Inheritance Selection
 # -----------------------------------------------------------------------------
 
+# Interactive selection of profile to inherit from
+# Sets INHERIT_FROM global variable with selected profile name (or empty)
+# User can select from available profiles or choose not to inherit
 select_inheritance() {
     # M27 Fix: Use while loop instead of word splitting for safety with special chars
     local profiles=()
@@ -269,6 +275,9 @@ select_inheritance() {
 # Copy Selection
 # -----------------------------------------------------------------------------
 
+# Interactive selection of profile to copy from (alternative to inheritance)
+# Sets COPY_FROM global variable with selected profile name (or empty)
+# Only offered if user chose not to inherit from any profile
 select_copy_source() {
     # M13 Note: Only ask about copying if not inheriting
     # This design ensures COPY_FROM and INHERIT_FROM are mutually exclusive:
