@@ -391,6 +391,8 @@ write_file() {
         print_error "Failed to create temporary file for: $dest"
         return 1
     }
+    # H1 Fix: Track temp file for cleanup in case of interruption
+    _AGENT_OS_TEMP_FILES+=("$temp_file")
 
     # Write content to temp file
     if ! printf '%s\n' "$content" > "$temp_file"; then
@@ -405,6 +407,8 @@ write_file() {
         print_error "Failed to move temporary file to: $dest"
         return 1
     fi
+    # H1 Fix: Remove from tracking array after successful move
+    remove_temp_file "$temp_file"
 
     print_verbose "Wrote file: $dest"
     return 0
@@ -1029,6 +1033,14 @@ process_workflows() {
         fi
     done <<< "$workflow_refs"
 
+    # H3 Fix: Validate all workflow refs were processed
+    # Check if any {{workflows/...}} tags remain unprocessed
+    local remaining_refs=$(echo "$content" | grep -c '{{workflows/[^}]*}}' || true)
+    if [[ $remaining_refs -gt 0 ]]; then
+        print_warning "process_workflows: $remaining_refs workflow reference(s) may not have been fully processed"
+        print_verbose "Remaining workflow tags detected in output - this may indicate a subshell scope issue"
+    fi
+
     echo "$content"
 }
 
@@ -1472,11 +1484,42 @@ compile_agent() {
     content=$(process_phase_tags "$content" "$base_dir" "$profile" "$phase_mode")
 
     # Replace Playwright in tools
+    # H2 Fix: Use perl with temp files instead of sed to handle special characters safely
     if echo "$content" | grep -q "^tools:.*Playwright"; then
         local tools_line=$(echo "$content" | grep "^tools:")
         local new_tools_line=$(replace_playwright_tools "$tools_line")
-        # Simple replacement since this is a single line
-        content=$(echo "$content" | sed "s|^tools:.*$|$new_tools_line|")
+        # Use temp files to avoid shell interpolation issues with special characters
+        local temp_content=$(create_temp_file)
+        local temp_replacement=$(create_temp_file)
+        echo "$content" > "$temp_content"
+        echo "$new_tools_line" > "$temp_replacement"
+        content=$(perl -e '
+            use strict;
+            use warnings;
+
+            my $replacement_file = $ARGV[0];
+            my $content_file = $ARGV[1];
+
+            # Read replacement line
+            open(my $fh, "<", $replacement_file) or die $!;
+            my $replacement = do { local $/; <$fh> };
+            close($fh);
+            chomp $replacement;
+
+            # Read content
+            open($fh, "<", $content_file) or die $!;
+            my $content = do { local $/; <$fh> };
+            close($fh);
+
+            # Replace tools line (^tools:.*$ pattern)
+            $content =~ s/^tools:.*$/$replacement/m;
+
+            print $content;
+        ' "$temp_replacement" "$temp_content") || {
+            print_warning "Perl replacement failed for Playwright tools"
+        }
+        remove_temp_file "$temp_content"
+        remove_temp_file "$temp_replacement"
     fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
