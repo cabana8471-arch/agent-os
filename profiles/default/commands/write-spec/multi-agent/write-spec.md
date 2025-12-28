@@ -50,7 +50,7 @@ Instruct the subagent to:
 
 IMPORTANT: When delegating to the spec-writer subagent, ensure you pass the following standards context so the specification aligns with the user's preferred tech stack and conventions:
 
-{{standards/*}}
+{{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
 
 ### PHASE 3: Present results and next steps

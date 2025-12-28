@@ -72,7 +72,7 @@ For each task, assign one of these statuses:
 
 | Status | Meaning | Action |
 |--------|---------|--------|
-| ✅ Verified | Task complete with evidence | None |
+| ✅ Complete | Task complete with evidence | None |
 | ⚠️ Uncertain | Checkbox marked but evidence unclear | Note for review and assign Issue ID |
 | ❌ Incomplete | Task not done or evidence missing | Must be addressed - assign Issue ID |
 

@@ -53,6 +53,14 @@ Instruct the subagent to:
 6. Handle any in-progress implementation considerations
 7. Return a summary of changes applied
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the spec-writer subagent, ensure you pass the following standards context:
+
+{{standards/global/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Present changes and next steps
 
 After the spec-writer completes, inform the user:

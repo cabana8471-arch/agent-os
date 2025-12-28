@@ -42,7 +42,7 @@ The spec-shaper will give you several separate responses that you MUST show to t
 
 IMPORTANT: When delegating to the spec-initializer and spec-shaper subagents, ensure you pass the following standards context so the requirements align with the user's preferred tech stack and conventions:
 
-{{standards/*}}
+{{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
 
 ### PHASE 3: Inform the user

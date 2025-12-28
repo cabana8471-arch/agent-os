@@ -51,6 +51,14 @@ Instruct the subagent to:
 6. Create the verification report at `agent-os/specs/[spec-path]/verification/spec-verification.md`
 7. Return a summary of findings
 
+{{UNLESS standards_as_claude_code_skills}}
+## Standards for Subagent
+
+IMPORTANT: When delegating to the spec-verifier subagent, ensure you pass the following standards context:
+
+{{standards/global/*}}
+{{ENDUNLESS standards_as_claude_code_skills}}
+
 ### PHASE 3: Present findings and next steps
 
 After the spec-verifier completes, inform the user:

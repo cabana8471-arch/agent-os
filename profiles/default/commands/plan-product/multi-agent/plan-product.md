@@ -26,7 +26,7 @@ The product-planner will:
 
 IMPORTANT: When delegating to the product-planner subagent, ensure you pass the following standards context so the product planning aligns with the user's preferred tech stack and conventions:
 
-{{standards/*}}
+{{standards/global/*}}
 {{ENDUNLESS standards_as_claude_code_skills}}
 
 ### PHASE 2: Inform the user

@@ -1996,13 +1996,13 @@ normalize_flag() {
 
 # Load base installation configuration
 load_base_config() {
-    BASE_VERSION=$(get_yaml_value "$BASE_DIR/config.yml" "version" "2.1.0")
+    BASE_VERSION=$(get_yaml_value "$BASE_DIR/config.yml" "version" "2.1.1")  # AOS-0108: Match config.yml version
     BASE_PROFILE=$(get_yaml_value "$BASE_DIR/config.yml" "profile" "default")
     BASE_CLAUDE_CODE_COMMANDS=$(get_yaml_value "$BASE_DIR/config.yml" "claude_code_commands" "true")
     BASE_USE_CLAUDE_CODE_SUBAGENTS=$(get_yaml_value "$BASE_DIR/config.yml" "use_claude_code_subagents" "true")
     BASE_AGENT_OS_COMMANDS=$(get_yaml_value "$BASE_DIR/config.yml" "agent_os_commands" "false")
-    BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS=$(get_yaml_value "$BASE_DIR/config.yml" "standards_as_claude_code_skills" "true")
-    BASE_LAZY_LOAD_WORKFLOWS=$(get_yaml_value "$BASE_DIR/config.yml" "lazy_load_workflows" "false")
+    BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS=$(get_yaml_value "$BASE_DIR/config.yml" "standards_as_claude_code_skills" "false")  # AOS-0106: Match config.yml value
+    BASE_LAZY_LOAD_WORKFLOWS=$(get_yaml_value "$BASE_DIR/config.yml" "lazy_load_workflows" "true")  # AOS-0107: Match config.yml value
 
     # Check for old config flags to set variables for validation
     MULTI_AGENT_MODE=$(get_yaml_value "$BASE_DIR/config.yml" "multi_agent_mode" "")
