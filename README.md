@@ -16,6 +16,26 @@ Use it with:
 
 ---
 
+### Fork Changes
+
+This fork extends Agent OS with additional functionality:
+
+**New Profiles:** nextjs, react, seo-nextjs-drizzle, wordpress, woocommerce
+
+**New Agents:** code-reviewer, test-strategist, documentation-writer, dependency-manager, refactoring-advisor, feature-analyst
+
+**New Commands:** /review-code, /verify-spec, /update-spec, /test-strategy, /generate-docs, /audit-deps, /analyze-refactoring, /analyze-features, /rollback, /improve-skills
+
+**Bug Fixes:** 115 issues resolved (AOS-0001 to AOS-0115)
+- 2 CRITICAL: Data integrity and security fixes
+- 12+ HIGH: Error handling, trap safety, input validation
+- 60+ MEDIUM: Script robustness, standards references
+- 40+ LOW: Documentation, code style, edge cases
+
+See [FORK_CHANGELOG.md](FORK_CHANGELOG.md) for complete details.
+
+---
+
 ### Documentation & Installation
 
 Docs, installation, usage, & best practices 👉 [It's all here](https://buildermethods.com/agent-os)
